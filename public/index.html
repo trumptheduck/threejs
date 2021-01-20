@@ -81,7 +81,7 @@
             var x = event.accelerationIncludingGravity.x;
             var y = event.accelerationIncludingGravity.y;
             var z = event.accelerationIncludingGravity.z;
-                logger.innerHTML = `x:${x}, x:${y}, x:${z}`
+                logger.innerHTML = `x:${Math.floor(x)}, y:${Math.floor(y)}, z:${Math.floor(z)}`
             }
 
             window.addEventListener("devicemotion", handleMotionEvent, true);
