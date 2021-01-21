@@ -9,9 +9,59 @@
         body {
             margin: 0px;
         }
+        #container {
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+            #joystick {
+                position: absolute;
+                bottom: 5%;
+                right: 5%;
+                width: 15vw;
+                height: 15vw;
+                border-radius: 100%;
+                background-color: firebrick;
+            }
+                #joystick-base {
+                    position: absolute;
+                    top: 0%;
+                    left: 0%;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 100%;
+                    background-color: transparent;
+                    z-index: 2;
+                }
+                #joystick-joy {
+                    position: absolute;
+                    top: 35%;
+                    left: 35%;
+                    width: 30%;
+                    height: 30%;
+                    border-radius: 100%;
+                    background-color: darkblue;
+                }
     </style>
 	<body>
-        <p id="logger" style="position: absolute; top: 0%; left: 3%; color: white;">Log</p>
+        <div id="container"></div>
+        <div id="ui-layer">
+            <div id="joystick">
+                <div id="joystick-base"></div>
+                <div id="joystick-joy"></div>
+            </div>
+        </div>
         <script src="/js/three/build/three.js"></script>
         <script src="/js/three/examples/js/controls/DeviceOrientationControls.js"></script>
 		<script>
@@ -39,31 +89,42 @@
                 */
 				//
                 const geometry = new THREE.BoxGeometry();
-                const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+                const material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
                 const cube = new THREE.Mesh( geometry, material );
                 scene.add( cube );
-
+                const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+                scene.add( light );
                 camera.position.z = 5;
 
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
-				document.body.appendChild( renderer.domElement );
+				document.getElementById('container').appendChild( renderer.domElement );
 
 				//
 
 				window.addEventListener( 'resize', onWindowResize, false );
+                const player = {
+                    doMovement(speed,angle,inputAngle) {
+                        if (player.isMoving) {
+                            camera.position.x += speed*Math.sin(angle)
+                            camera.position.z += speed*Math.cos(angle)
+                        }
+                    },
+                    isMoving: false
+                    
+                }
 
-
-
+                let dirVector = new THREE.Vector3()
+                let dirAngle 
 			function animate() {
-
 				window.requestAnimationFrame( animate );
-
+                camera.getWorldDirection(dirVector)
+                dirAngle =  Math.atan2(dirVector.x,dirVector.z)  
 				controls.update();
 				renderer.render( scene, camera );
-
+                player.doMovement(0.1,dirAngle)
 			}
 
 			function onWindowResize() {
@@ -75,16 +136,45 @@
 
 			}
             animate()
-            const logger = document.getElementById("logger")
-            function handleMotionEvent(event) {
-
-            var x = event.accelerationIncludingGravity.x;
-            var y = event.accelerationIncludingGravity.y;
-            var z = event.accelerationIncludingGravity.z;
-                logger.innerHTML = `x:${Math.floor(x)}, y:${Math.floor(y)}, z:${Math.floor(z)}`
+            const joyEle = {
+                joystick : document.getElementById('joystick'),
+                joy : document.getElementById('joystick-joy'),
+                base : document.getElementById('joystick-base'),
             }
+            const joystick = {
+                offsets: {
+                    x: joyEle.joystick.getBoundingClientRect().x+joyEle.joy.getBoundingClientRect().width/2,
+                    y: joyEle.joystick.getBoundingClientRect().y+joyEle.joy.getBoundingClientRect().height/2,
+                },
+                normalized: {
+                    x: joyEle.joystick.getBoundingClientRect().width/2-joyEle.joy.getBoundingClientRect().width/2,
+                    y: joyEle.joystick.getBoundingClientRect().height/2-joyEle.joy.getBoundingClientRect().height/2,
+                },
+                angle: {
+                    
+                }
+            }
+            
+            var clientX, clientY;
 
-            window.addEventListener("devicemotion", handleMotionEvent, true);
+            document.getElementById("joystick-base").addEventListener('touchstart', function(e) {
+            // Cache the client X/Y coordinates
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+            joyEle.joy.style.top = `${clientY - joystick.offsets.y}px`;
+            joyEle.joy.style.left = `${clientX - joystick.offsets.x}px`;
+            }, false);
+            document.getElementById("joystick-base").addEventListener('touchmove', function(e) {
+            // Cache the client X/Y coordinates
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+            joyEle.joy.style.top = `${clientY - joystick.offsets.y}px`;
+            joyEle.joy.style.left = `${clientX - joystick.offsets.x}px`;
+            }, false);
+            document.getElementById("joystick-base").addEventListener('touchend', function(e) {
+                joyEle.joy.style.top = `${joystick.normalized.y}px`;
+                joyEle.joy.style.left = `${joystick.normalized.x}px`;
+            }, false);
 		</script>
 	</body>
 </html>
