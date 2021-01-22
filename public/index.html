@@ -102,7 +102,7 @@
 				const helper = new THREE.Mesh( helperGeometry, helperMaterial );
                 */
 				//
-                const geometry = new THREE.BoxGeometry();
+                /*const geometry = new THREE.BoxGeometry();
                 const material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
                 const cube = new THREE.Mesh( geometry, material );
                 const planeGeometry = new THREE.BoxGeometry(100,1,100)
@@ -112,7 +112,31 @@
                 planeMesh.position.y = -1
                 scene.add( cube );
                 const light = new THREE.AmbientLight( 0x404040 ); // soft white light
-                scene.add( light );
+                scene.add( light );*/
+                const loader = new THREE.ObjectLoader();
+
+                loader.load(
+                    // resource URL
+                    "/scene/scene.json",
+
+                    // onLoad callback
+                    // Here the loaded data is assumed to be an object
+                    function ( obj ) {
+                        // Add the loaded object to the scene
+                        scene.add( obj );
+                    },
+
+                    // onProgress callback
+                    function ( xhr ) {
+                        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+                    },
+
+                    // onError callback
+                    function ( err ) {
+                        console.error( 'An error happened' );
+                    }
+                );
+
                 camera.position.z = 5;
                 camera.position.y = 1;
 
