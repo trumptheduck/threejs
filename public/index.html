@@ -8,6 +8,7 @@
     <style>
         body {
             margin: 0px;
+            overflow: hidden;
         }
         #container {
             position: absolute;
@@ -32,7 +33,11 @@
                 width: 15vw;
                 height: 15vw;
                 border-radius: 100%;
-                background-color: firebrick;
+                background-color: transparent;
+                background-image: url("/images/joystick/base.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+                opacity: 50%;
             }
                 #joystick-base {
                     position: absolute;
@@ -46,17 +51,20 @@
                 }
                 #joystick-joy {
                     position: absolute;
-                    top: 35%;
-                    left: 35%;
-                    width: 30%;
-                    height: 30%;
+                    top: 30%;
+                    left: 30%;
+                    width: 40%;
+                    height: 40%;
                     border-radius: 100%;
-                    background-color: darkblue;
+                    background-color: transparent;
+                    background-image: url("/images/joystick/joy.png");
+                    background-size: contain;
+                    background-repeat: no-repeat;
                 }
     </style>
 	<body>
         <div id="container"></div>
-        <div id="ui-layer" style="display: none;">
+        <div id="ui-layer">
             <div id="joystick">
                 <div id="joystick-base"></div>
                 <div id="joystick-joy"></div>
@@ -71,7 +79,7 @@
 				controls = new THREE.DeviceOrientationControls( camera );
                 controls.connect()
 				scene = new THREE.Scene();
-                
+                /*
 				const geometry = new THREE.SphereBufferGeometry( 500, 60, 40 );
 				// invert the geometry on the x-axis so that all of the faces point inward
 				geometry.scale( - 1, 1, 1 );
@@ -86,36 +94,27 @@
 				const helperGeometry = new THREE.BoxBufferGeometry( 100, 100, 100, 4, 4, 4 );
 				const helperMaterial = new THREE.MeshBasicMaterial( { color: 0xff00ff, wireframe: true } );
 				const helper = new THREE.Mesh( helperGeometry, helperMaterial );
-                renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				document.getElementById('container').appendChild( renderer.domElement );
-                function animate() {
-				window.requestAnimationFrame( animate );
-				controls.update();
-				renderer.render( scene, camera );
-                }
-                
-                function onWindowResize() {
-
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-
-                    renderer.setSize( window.innerWidth, window.innerHeight );
-
-                }
-                animate()
-				/*
+                */
+				//
                 const geometry = new THREE.BoxGeometry();
                 const material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
                 const cube = new THREE.Mesh( geometry, material );
+                const planeGeometry = new THREE.BoxGeometry(100,1,100)
+                const planeMaterial = new THREE.MeshStandardMaterial({color: 0x11221 })
+                const planeMesh = new THREE.Mesh(planeGeometry,planeMaterial)
+                scene.add( planeMesh )
+                planeMesh.position.y = -1
                 scene.add( cube );
                 const light = new THREE.AmbientLight( 0x404040 ); // soft white light
                 scene.add( light );
                 camera.position.z = 5;
+                camera.position.y = 1;
 
 
-				
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.getElementById('container').appendChild( renderer.domElement );
 
 				//
 
@@ -123,11 +122,13 @@
                 const player = {
                     doMovement(speed,angle,inputAngle) {
                         if (player.isMoving) {
-                            camera.position.x += speed*Math.sin(angle)
-                            camera.position.z += speed*Math.cos(angle)
+                            camera.position.x += speed*Math.sin(angle+inputAngle)
+                            camera.position.z += speed*Math.cos(angle+inputAngle)
                         }
                     },
-                    isMoving: false
+                    isMoving: false,
+                    movingAngle: null,
+                    
                     
                 }
 
@@ -139,57 +140,108 @@
                 dirAngle =  Math.atan2(dirVector.x,dirVector.z)  
 				controls.update();
 				renderer.render( scene, camera );
-                player.doMovement(0.1,dirAngle)
+                player.doMovement(0.01,dirAngle,-player.movingAngle)
 			}
 
 			function onWindowResize() {
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 			}
             animate()
             const joyEle = {
                 joystick : document.getElementById('joystick'),
+                joystickRect: document.getElementById('joystick').getBoundingClientRect(),
                 joy : document.getElementById('joystick-joy'),
+                joyRect: document.getElementById('joystick-joy').getBoundingClientRect(),
                 base : document.getElementById('joystick-base'),
             }
             const joystick = {
                 offsets: {
-                    x: joyEle.joystick.getBoundingClientRect().x+joyEle.joy.getBoundingClientRect().width/2,
-                    y: joyEle.joystick.getBoundingClientRect().y+joyEle.joy.getBoundingClientRect().height/2,
+                    x: joyEle.joystickRect.x+joyEle.joyRect.width/2,
+                    y: joyEle.joystickRect.y+joyEle.joyRect.height/2,
                 },
                 normalized: {
-                    x: joyEle.joystick.getBoundingClientRect().width/2-joyEle.joy.getBoundingClientRect().width/2,
-                    y: joyEle.joystick.getBoundingClientRect().height/2-joyEle.joy.getBoundingClientRect().height/2,
+                    x: joyEle.joystickRect.width/2-joyEle.joyRect.width/2,
+                    y: joyEle.joystickRect.height/2-joyEle.joyRect.height/2,
                 },
-                angle: {
-
+                angle: 0,
+                updateControlProfile() {
+                        let position = {
+                        relative : {
+                            y: userInput.clientY - joystick.offsets.y,
+                            x: userInput.clientX - joystick.offsets.x
+                        },
+                        normalized: {
+                            y: -(userInput.clientY - joystick.offsets.y - joyEle.joystickRect.height/2 +joyEle.joyRect.height/2),
+                            x: userInput.clientX - joystick.offsets.x - joyEle.joystickRect.width/2 + joyEle.joyRect.width/2
+                        }
+                        }
+                        if (Math.pow(position.normalized.x,2)+Math.pow(position.normalized.y,2)<Math.pow(joyEle.joystickRect.height/2,2)) {
+                            joyEle.joy.style.top = `${position.relative.y}px`;
+                            joyEle.joy.style.left = `${position.relative.x}px`;
+                        } else {
+                            joyEle.joy.style.top = `${(joyEle.joystickRect.height/2-joyEle.joyRect.height/8)*Math.sin(player.movingAngle-Math.PI/2)+joyEle.joystickRect.height/2-joyEle.joyRect.height/2}px`;
+                            joyEle.joy.style.left = `${(joyEle.joystickRect.height/2-joyEle.joyRect.height/8)*Math.cos(player.movingAngle-Math.PI/2)+joyEle.joystickRect.height/2-joyEle.joyRect.height/2}px`;
+                        }
+                    
+                        getJoystickAngle(position.normalized)
+                    },
+                resetControlProfile() {
+                    let position = {
+                    relative : {
+                        y: userInput.clientY - joystick.offsets.y,
+                        x: userInput.clientX - joystick.offsets.x
+                    },
+                    normalized: {
+                        y: 0,
+                        x: 0
+                        }
+                    }
+                joyEle.joy.style.top = `${joystick.normalized.y}px`;
+                joyEle.joy.style.left = `${joystick.normalized.x}px`;
                 }
             }
             
-            var clientX, clientY;
 
+            const getJoystickAngle = (coords) => {
+                joystick.angle = Math.atan(coords.y/coords.x)
+                if (coords.x < 0 ) {
+                    let degAngle = -THREE.Math.radToDeg(joystick.angle)-90
+                    player.movingAngle = THREE.Math.degToRad(degAngle)
+                } else if (coords.x > 0 ) {
+                    let degAngle = 180-THREE.Math.radToDeg(joystick.angle)-90
+                    player.movingAngle = THREE.Math.degToRad(degAngle)
+                } else {
+                    if (coords.y > 0) {
+                        let degAngle = 0;
+                        player.movingAngle = THREE.Math.degToRad(degAngle)
+                    } else if (coords.y < 0) {
+                        let degAngle = 180;
+                        player.movingAngle = THREE.Math.degToRad(degAngle)
+                    } else {
+                    }
+                }
+            }
+            var userInput = {clientX: 0, clientY:0}
             document.getElementById("joystick-base").addEventListener('touchstart', function(e) {
-            // Cache the client X/Y coordinates
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-            joyEle.joy.style.top = `${clientY - joystick.offsets.y}px`;
-            joyEle.joy.style.left = `${clientX - joystick.offsets.x}px`;
+            userInput.clientX = e.touches[0].clientX;
+            userInput.clientY = e.touches[0].clientY;
+            joystick.updateControlProfile()
+            player.isMoving = true;
             }, false);
-            document.getElementById("joystick-base").addEventListener('touchmove', function(e) {
-            // Cache the client X/Y coordinates
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-            joyEle.joy.style.top = `${clientY - joystick.offsets.y}px`;
-            joyEle.joy.style.left = `${clientX - joystick.offsets.x}px`;
+            document.getElementById("joystick-base").addEventListener('touchmove', function(e) {            
+            userInput.clientX = e.touches[0].clientX;
+            userInput.clientY = e.touches[0].clientY;
+            joystick.updateControlProfile()
+            player.isMoving = true;
             }, false);
             document.getElementById("joystick-base").addEventListener('touchend', function(e) {
-                joyEle.joy.style.top = `${joystick.normalized.y}px`;
-                joyEle.joy.style.left = `${joystick.normalized.x}px`;
-            }, false);*/
+            joystick.resetControlProfile()
+            player.isMoving = false;
+            }, false);
 		</script>
 	</body>
 </html>
