@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js webgl - controls - deviceorientation</title>
+        <link rel="manifest" href="/js/pwa.webmanifest">
+        <link rel="apple-touch-icon" href="/images/icon-256x256.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff"/>
+        <title>Page Title</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     </head>
@@ -70,6 +74,8 @@
                 <div id="joystick-joy"></div>
             </div>
         </div>
+        <script src="/js/pwa.js"></script>
+        <script src="/js/status.js"></script>
         <script src="/js/three/build/three.js"></script>
         <script src="/js/three/examples/js/controls/DeviceOrientationControls.js"></script>
 		<script>
