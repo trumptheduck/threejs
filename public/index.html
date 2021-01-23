@@ -40,6 +40,7 @@
         import * as THREE from "/js/three/build/three.module.js"
         import {DeviceOrientationControls} from "/js/three/examples/jsm/controls/DeviceOrientationControls.js"
         import {Joystick} from "/js/modules/controllers/Joystick.js"
+        import '/js/cannon/build/cannon.min.js'
         //Define core classes
             //Player class hold the data of a player
             class Player {
@@ -80,7 +81,7 @@
             //Setup THREE JS Components
                 let camera, scene, renderer, controls;
                 //THREE JS Camera
-				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.01, 1100 );
                 //THREE JS Controller via Device Orientation Sensors
 				controls = new DeviceOrientationControls( camera );
                 controls.connect()

@@ -1,7 +1,11 @@
 import * as THREE from "../../three/build/three.module.js"
 //Check for container
-if (typeof(document.getElementById("ui-layer")) !== "object") {
-    console.log("UI Layer not found! Failed to add Joystick!")
+if (document.getElementById("ui-layer") === null) {
+    console.error("UI Layer not found! Failed to add Joystick!")
+    var joystick = {
+        compiledAngle: null,
+        active: null
+    }
 } else {
             //Append Controller
             document.getElementById("ui-layer").innerHTML += ` 

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+        <link rel="manifest" href="/js/pwa.webmanifest">
+        <link rel="apple-touch-icon" href="/images/icon-256x256.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff"/>
+        <title>Page Title</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    </head>
+    <style>
+        body {
+            margin: 0px;
+            overflow: hidden;
+        }
+        #container {
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+    </style>
+	<body>
+        <div id="container"></div>
+        <div id="ui-layer"></div>
+        <script src="/js/pwa.js"></script>
+        <script src="/js/status.js"></script>
+		<script type="module">
+        import * as THREE from "/js/three/build/three.module.js"
+        import {DeviceOrientationControls} from "/js/three/examples/jsm/controls/DeviceOrientationControls.js"
+        import {Joystick} from "/js/modules/controllers/Joystick.js"
+        import '/js/cannon/build/cannon.min.js'
+        //Define core classes
+            //Player class hold the data of a player
+            class Player {
+                    constructor() {
+                        this.isMoving = false;
+                        this.movingAngle = null;
+                        this.speed = 0.04;
+                        this.geometry = new THREE.BoxGeometry(0.5,1.5,0.5);
+                        this.material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
+                        this.mesh = new THREE.Mesh( this.geometry, this.material );
+                        this.shape = new CANNON.Box(new CANNON.Vec3(0.5, 1.5, 0.5));
+                        this.body = new CANNON.Body({ mass: 1 });
+                        this.body.addShape(this.shape)
+                        this.body.position.x = this.mesh.position.x
+                        this.body.position.y = this.mesh.position.y
+                        this.body.position.z = this.mesh.position.z
+                        this.doMovement = (speed,angle,inputAngle) => {
+                            if (player.isMoving) {
+                            this.body.velocity.x = speed*Math.sin(angle+inputAngle)
+                            this.body.velocity.z = speed*Math.cos(angle+inputAngle)
+                            }
+                        }
+                    }      
+                }
+            //Game engine is an utility class which perform game logics
+            class GameEngine {
+                    constructor() {
+                        this.camera = {
+                            dirVector: new THREE.Vector3(),
+                            dirAngle: null
+                        }
+                    }
+                    updatePlayerViewport(camera,player) {
+                        camera.position.x = player.mesh.position.x;
+                        camera.position.z = player.mesh.position.z;
+                        camera.position.y = player.mesh.position.y + 2;
+                    }
+                    updatePlayerHitbox(player) {
+                        player.mesh.position.set(player.body.position.x, player.body.position.y, player.body.position.z);
+                        player.mesh.quaternion.set(player.body.quaternion.x, player.body.quaternion.y, player.body.quaternion.z, player.body.quaternion.w);
+                    }
+                    getCameraAngle(camera) {
+                        camera.getWorldDirection(this.camera.dirVector)
+                        this.camera.dirAngle =  Math.atan2(this.camera.dirVector.x,this.camera.dirVector.z)  
+                    }
+                }
+            //Setup THREE JS Components
+                let camera, scene, renderer, controls;
+                //THREE JS Camera
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.01, 1100 );
+                //THREE JS Controller via Device Orientation Sensors
+				controls = new DeviceOrientationControls( camera );
+                controls.connect()
+                //Create a new Scene
+                scene = new THREE.Scene();
+                //Define a scene loader
+                const loader = new THREE.ObjectLoader();
+                function loadTHREEScene(path) {
+                    loader.load(
+                    path,
+                    function ( obj ) {
+                        scene.add( obj );
+                    },
+                    function ( xhr ) {
+                        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+                    },
+                    function ( err ) {
+                        console.error( 'Unable to load' );
+                    }
+                );
+                }
+            //Setup world engine
+            const world = new CANNON.World()
+            //Setup core objects
+            var Engine = new GameEngine()
+            var player = new Player()
+            //Make a function to pre-load data and attributes to the scene
+                function load() {
+                    //Setup camera
+                    camera.position.z = 5;
+                    camera.position.y = 1.7;
+                    //Load a scene
+                    loadTHREEScene("/scene/scene.json")
+                    scene.add(player.mesh)
+                    world.addBody(player.body)
+                    //Setup the renderer/canvas
+                    renderer = new THREE.WebGLRenderer( { antialias: true } );
+                    renderer.setPixelRatio( window.devicePixelRatio );
+                    renderer.setSize( window.innerWidth, window.innerHeight );
+                    //Append the renderer into our container
+                    document.getElementById('container').appendChild( renderer.domElement );
+                }
+            //Make a function to update the renderer and animate it               
+			function animate() {
+                //Bind player data with controller data
+                player.movingAngle = Joystick.getAngle()
+                player.isMoving = Joystick.getState()
+                //Update the controller to get the lastest data
+                controls.update();
+                //Update camera angle
+                world.step()
+                Engine.getCameraAngle(camera)
+                //Do player movement
+                player.doMovement(player.speed,Engine.camera.dirAngle,-player.movingAngle)
+                //Update player viewport to match player movement
+                Engine.updatePlayerViewport(camera,player)
+                //Render the scene
+				renderer.render( scene, camera );
+                //Request another frame
+                window.requestAnimationFrame( animate );
+            }
+            //Detect resizing event to update camera's matrix
+            window.addEventListener( 'resize', onWindowResize, false );
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+        //Initialize the program
+            load()
+            animate() 
+		</script>
+	</body>
+</html>
