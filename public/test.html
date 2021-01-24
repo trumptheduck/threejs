@@ -41,26 +41,38 @@
         import {DeviceOrientationControls} from "/js/three/examples/jsm/controls/DeviceOrientationControls.js"
         import {Joystick} from "/js/modules/controllers/Joystick.js"
         import '/js/cannon/build/cannon.min.js'
+        import WorldComponent from "/js/modules/operators/WorldComponent.js"
         //Define core classes
             //Player class hold the data of a player
             class Player {
                     constructor() {
                         this.isMoving = false;
                         this.movingAngle = null;
-                        this.speed = 0.04;
-                        this.geometry = new THREE.BoxGeometry(0.5,1.5,0.5);
+                        this.speed = 3;
+                        this.geometry = new THREE.BoxGeometry(0.5,3,0.5);
                         this.material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
                         this.mesh = new THREE.Mesh( this.geometry, this.material );
-                        this.shape = new CANNON.Box(new CANNON.Vec3(0.5, 1.5, 0.5));
-                        this.body = new CANNON.Body({ mass: 1 });
+                        this.shape = new CANNON.Box(new CANNON.Vec3(0.5/2, 3/2, 0.5/2));
+                        this.body = new CANNON.Body({ mass: 100});
                         this.body.addShape(this.shape)
-                        this.body.position.x = this.mesh.position.x
-                        this.body.position.y = this.mesh.position.y
-                        this.body.position.z = this.mesh.position.z
+                        this.body.position.x = 0
+                        this.body.position.y = 10
+                        this.body.position.z = 0
+                        this.body.angularDamping=1;
                         this.doMovement = (speed,angle,inputAngle) => {
                             if (player.isMoving) {
                             this.body.velocity.x = speed*Math.sin(angle+inputAngle)
                             this.body.velocity.z = speed*Math.cos(angle+inputAngle)
+                            } else {
+                            this.body.velocity.x = 0
+                            this.body.velocity.z = 0
+                            }
+                        },
+                        this.jump = () => {
+                            if (this.body.velocity.y !== 0) {
+                                return
+                            } else {
+                                this.body.velocity = 10;
                             }
                         }
                     }      
@@ -72,11 +84,11 @@
                             dirVector: new THREE.Vector3(),
                             dirAngle: null
                         }
-                    }
+                        }
                     updatePlayerViewport(camera,player) {
-                        camera.position.x = player.mesh.position.x;
-                        camera.position.z = player.mesh.position.z;
-                        camera.position.y = player.mesh.position.y + 2;
+                        camera.position.x = player.body.position.x;
+                        camera.position.z = player.body.position.z;
+                        camera.position.y = player.body.position.y + 2;
                     }
                     updatePlayerHitbox(player) {
                         player.mesh.position.set(player.body.position.x, player.body.position.y, player.body.position.z);
@@ -114,18 +126,82 @@
                 }
             //Setup world engine
             const world = new CANNON.World()
+            world.solver.iterations = 20;
+            world.solver.tolerance = 0;
+            world.gravity.set(0,-9.83,0)
             //Setup core objects
             var Engine = new GameEngine()
             var player = new Player()
+            var WRCOMP = new WorldComponent()
+            var concrete = new THREE.TextureLoader().load("/images/concrete.jpg");
+            concrete.wrapT = THREE.RepeatWrapping;
+            concrete.wrapS= THREE.RepeatWrapping;
+            const block = new WRCOMP.Schema("BoxGeometry","MeshStandardMaterial",{
+                    dim: {
+                        x : 1,
+                        y : 1,
+                        z : 1
+                    },
+                    style: {map: concrete },
+                })
+            const map = [
+           [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,],
+            ]
+            const floor = new WRCOMP.Schema("BoxGeometry","MeshStandardMaterial",{dim: {x:100,y:0.5,z:100},style: {color : 0xffffff}})
+            const componentArray = [
+                new WRCOMP.Component(block,{x:4,y:2,z:3}),
+                new WRCOMP.Component(floor,{x:0,y:-1,z:0}),
+                new WRCOMP.Component(block,{x:9,y:2,z:3})
+            ]
+                console.log(typeof(block1))
             //Make a function to pre-load data and attributes to the scene
                 function load() {
+                    for( let mapy = 0; mapy < map.length; mapy++) {
+                        for(let i = 0; i < map[mapy].length;i++) {
+                            let mapx = i%10;
+                            let mapz = Math.floor(i/10)
+                            componentArray.push( new WRCOMP.Component(block,{x:mapx,y:mapy,z:mapz}),)
+                        }
+                    }
+                    world.addContactMaterial(WRCOMP.physicsContactMaterial); 
                     //Setup camera
                     camera.position.z = 5;
                     camera.position.y = 1.7;
                     //Load a scene
+                    WRCOMP.loadComponentsArray(componentArray,scene,world)
                     loadTHREEScene("/scene/scene.json")
                     scene.add(player.mesh)
                     world.addBody(player.body)
+                    player.body.material = WRCOMP.physicsMaterial
                     //Setup the renderer/canvas
                     renderer = new THREE.WebGLRenderer( { antialias: true } );
                     renderer.setPixelRatio( window.devicePixelRatio );
@@ -140,12 +216,13 @@
                 player.isMoving = Joystick.getState()
                 //Update the controller to get the lastest data
                 controls.update();
+                world.step(1/60)
                 //Update camera angle
-                world.step()
                 Engine.getCameraAngle(camera)
                 //Do player movement
                 player.doMovement(player.speed,Engine.camera.dirAngle,-player.movingAngle)
                 //Update player viewport to match player movement
+                Engine.updatePlayerHitbox(player)
                 Engine.updatePlayerViewport(camera,player)
                 //Render the scene
 				renderer.render( scene, camera );
