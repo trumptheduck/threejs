@@ -189,7 +189,11 @@
                         for(let i = 0; i < map[mapy].length;i++) {
                             let mapx = i%10;
                             let mapz = Math.floor(i/10)
-                            componentArray.push( new WRCOMP.Component(block,{x:mapx,y:mapy,z:mapz}),)
+                            if (map[mapy][i] === 1) {
+                                componentArray.push( new WRCOMP.Component(block,{x:mapx,y:mapy,z:mapz}),)
+                            } else {
+                                
+                            }                           
                         }
                     }
                     world.addContactMaterial(WRCOMP.physicsContactMaterial); 
