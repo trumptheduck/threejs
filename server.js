@@ -9,7 +9,7 @@ app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, 'public/index.html'))
 })
 app.get('/test',(req, res) => {
-  res.sendFile(path.join(__dirname, 'public/test.html'))
+  res.sendFile(path.join(__dirname, 'public/experiment/mapGen.html'))
 })
 http.listen(httpPort, function () {
   console.log(`Listening on port ${httpPort}!`)

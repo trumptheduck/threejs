@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Page Title</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src='p5.min.js'></script>
+</head>
+<body>
+    <canvas id="canvas" style="width: 100%;height: 100%;"></canvas>
+</body>
+<script type="module">
+    import {noise, noiseSeed} from '/experiment/perlin-noise/index.js'
+    class HeightMap {
+    constructor() {
+        this.heightMap = [];
+    };
+    generate(seed) {
+        noiseSeed(seed)
+        for (let i = 0; i < 256;i++) {
+            this.heightMap[i] = Math.round(noise((i%16)/30,Math.floor(i/16)/30)*15)
+        }
+    }
+    }
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    function renderNoise(map) {
+        for (let i = 0; i < map.length; i++) {
+            context.globalAlpha = map[i]/15;
+            context.fillRect(30*(i%16),30*Math.floor(i/16),30,30)
+        }
+    }
+    var map = new HeightMap()
+    map.generate(Math.random()*1000)
+    renderNoise(map.heightMap)
+    console.log(map.heightMap)
+</script>
+</html>
