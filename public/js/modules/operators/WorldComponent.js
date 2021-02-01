@@ -133,12 +133,17 @@ export default class WorldComponent {
     }
     loadObjectMap(map) {
         for(let i = 0; i< map.heightMap.length;i++) {
-            this.objectMap.push({x:(i%map.size),y:map.heightMap[i],z:Math.floor(i/map.size)})
+            for (let j = 0; j <map.heightMap[i];j++) {
+            this.objectMap.push({x:(i%map.size),y:j-1,z:Math.floor(i/map.size)})
+        }
         }
     }
     loadHeightMap(map,scene,material) {
         for(let i = 0; i< map.heightMap.length;i++) {
-            this.renderBuffer({x:(i%map.size),y:map.heightMap[i],z:Math.floor(i/map.size)},scene,material)
+            for (let j = 0; j <map.heightMap[i];j++) {
+                this.renderBuffer({x:(i%map.size),y:j-1,z:Math.floor(i/map.size)},scene,material)
+            }
+            
         }
     }
     renderBuffer(pos,scene,material) {
@@ -167,6 +172,9 @@ export default class WorldComponent {
         meshE.position.y = pos.y;
         meshE.position.z = pos.z;
         var needToRender = {t:true,b:true,n:true,w:true,e:true,s:true}
+        if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y+1&&object.z === pos.z))!==undefined) {
+            needToRender.t = false;
+        }
         if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y-1&&object.z === pos.z))!==undefined) {
             needToRender.b = false;
         }
@@ -215,7 +223,7 @@ export default class WorldComponent {
     }
     getHitboxes(player,world) {
         for (let x = -2;x<=2;x++) {
-            for(let y = -3;y<=3;y++) {
+            for(let y = -2;y<=2;y++) {
                 for(let z= -2;z<=2;z++) {
                     if (Math.abs(x)<=1&&Math.abs(y)<=2&&Math.abs(z)<=1) {
                         if (this.objectMap.find(object => (object.x === Math.round(player.body.position.x)+x&&object.y === Math.round(player.body.position.y)+y&&object.z === Math.round(player.body.position.z)+z))!==undefined) {
@@ -240,5 +248,30 @@ export default class WorldComponent {
                 }
             }
         }; 
+    };
+    updateMeshNearObject(selectedObject,scene,material) {
+        for (let x = -1;x<=1;x++) {
+            for(let y = -1;y<=1;y++) {
+                for(let z= -1;z<=1;z++) {
+                    var datedMeshes = scene.children.filter(meshes => meshes.position.x === Math.round(selectedObject.x)+x&&meshes.position.y === Math.round(selectedObject.y)+y&&meshes.position.z === Math.round(selectedObject.z)+z);
+                        datedMeshes.forEach(mesh => {
+                            scene.remove(mesh)
+                        })
+                    var objectToUpdate = this.objectMap.find(object => (object.x === Math.round(selectedObject.x)+x&&object.y === Math.round(selectedObject.y)+y&&object.z === Math.round(selectedObject.z)+z));
+                    if (objectToUpdate !== undefined) {
+                        this.renderBuffer({x:objectToUpdate.x,y:objectToUpdate.y,z:objectToUpdate.z},scene,material)
+                    }
+                }
+            }
+        }
+    };
+    removeObject(selectedObject,scene,world,material) {
+        this.objectMap.splice(this.objectMap.indexOf(selectedObject),1)
+        this.updateMeshNearObject(selectedObject,scene,material)
+        var selectedBody = world.bodies.find(body => body.position.x === selectedObject.x&&body.position.y === selectedObject.y&&body.position.z === selectedObject.z);
+        if (selectedBody !== undefined) {
+            world.removeBody(selectedBody)
+        } 
+        
     }
 }

@@ -43,12 +43,12 @@
             bottom: 0;
             left: 0;
             right: 0;
-            border: rgb(60, 255, 0) solid 1px;
+            border: white solid 1.5px;
             background-color: transparent;
             margin: auto;">
          <div id="ui-corshair-center" style="
-         width: 2px;
-         height: 2px;
+         width: 3px;
+         height: 3px;
          position: absolute;
          border-radius: 100px;
          top:0;
@@ -106,8 +106,10 @@
                         this.body.sleepSpeedLimit = 1;
                         this.body.sleepTimeLimit = 1.0;
                         this.lookAt = null;
-                        this.destroyCD = 20;
+                        this.destroyCD = 2;
+                        this.jumpCD = 10;
                         this.currDestroyCD = 0;
+                        this.currJumpCD = 0;
                         this.spawn = (scene,world) => {
                             scene.add(player.mesh);
                             world.addBody(player.body);
@@ -137,12 +139,14 @@
                             this.snapVec.x = this.body.velocity.x
                             this.snapVec.y = this.body.velocity.z
                             }
-                            if (this.isJumping) {
+                            if (this.currJumpCD > 0) {this.currJumpCD--}
+                            if (this.isJumping&&this.currJumpCD === 0) {
                                 this.body.sleepState = 0
                                 if (!this.isGrounded) {
                                     return
                                 } else {
-                                    this.body.velocity.y = 6.1;
+                                    this.currJumpCD = this.jumpCD;
+                                    this.body.velocity.y = 5.8;
                                 }
                             }
                         }
@@ -151,13 +155,10 @@
                             if (this.currDestroyCD > 0) {this.currDestroyCD--}
                             if (this.isDestroying&&this.currDestroyCD === 0) {
                                 this.currDestroyCD = this.destroyCD;
-                                let object = wrcomp?.objectList.find(object => object.mesh.uuid === this.lookAt?.uuid);4
-                                if (object !== undefined) {
-                                    scene.remove(object.mesh);
-                                    world.remove(object.body);
+                                let selectedObject = wrcomp?.objectMap.find(object => (object.x === this.lookAt?.object.position.x&&object.y === this.lookAt?.object.position.y&&object.z === this.lookAt?.object.position.z));
+                                if (selectedObject !== undefined) {
+                                    WRCOMP.removeObject(selectedObject,scene,world,matter)
                                 }
-                                
-                                
                             };
                             if (this.isPlacing) {
                                 console.log("Cumming soon!")
@@ -244,10 +245,18 @@
                     document.addEventListener("click", ()=>{controls.lock()})
                 }
                 //Create a height map with Perlin Noise
-                var hMap = new HeightMap(32)
+                var hMap = new HeightMap(64)
                 hMap.generate(Math.random()*1000)
                 console.log(hMap.heightMap)
                 scene = new THREE.Scene()
+                const loader = new THREE.TextureLoader();
+                const texture = loader.load(
+                    '/images/background.png',
+                    () => {
+                    const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+                    rt.fromEquirectangularTexture(renderer, texture);
+                    scene.background = rt;
+                    });
                 //Once used to load THREE Scene
                 /*scene = new THREE.Scene();
                 //Define a scene loader
@@ -268,7 +277,7 @@
                 }*/
             //Setup world engine and variables
             const world = new CANNON.World()
-            world.solver.iterations = 5;
+            world.solver.iterations = 10;
             world.solver.tolerance = 0;
             world.gravity.set(0,-15,0);
             world.allowSleep = true;
@@ -302,7 +311,7 @@
                     world.addContactMaterial(WRCOMP.physicsContactMaterial); 
                     //Setup camera
                     //Load a scene
-                    
+
                     player.body.material = WRCOMP.physicsMaterial;
                     //Setup the renderer/canvas
                     renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -343,18 +352,19 @@
                         raycaster.setFromCamera( corshair, camera)
                         const intersects = raycaster.intersectObjects(scene.children)
                         
-                       
+                       keyboard.logParam = scene.children;
                         if (intersects[0] !== undefined) {
-                            player.lookAt = intersects[0].object;
+                            player.lookAt = intersects[0];
                         } else {
                             player.lookAt = null;
                         }
                         //Check if a player is on the ground or not
+                        
                         player.getGroundingStatus(scene)
                         //Optimize hitbox to appear only where it's needed
                         WRCOMP.getHitboxes(player,world)
                         //Move 1/30s in physic time
-                        world.step(1/30)
+                        world.step(1/25)
                         //Update camera angle
                         Engine.getCameraAngle(camera)
                         //Do player movement
@@ -363,7 +373,6 @@
                         //Update player viewport to match player movement
                         Engine.updatePlayerHitbox(player)
                         Engine.updatePlayerViewport(camera,player)
-                        //Render the scene
                         renderer.render( scene, camera );
                         //Request another frame
 
