@@ -34,7 +34,7 @@
 	<body>
         <div id="container"></div>
         <div id="ui-layer">
-            <div id="ui-corshair" style="
+            <div id="ui-crosshair" style="
             width: 10px;
             height: 10px;
             position: absolute;
@@ -46,7 +46,7 @@
             border: white solid 1.5px;
             background-color: transparent;
             margin: auto;">
-         <div id="ui-corshair-center" style="
+         <div id="ui-crosshair-center" style="
          width: 3px;
          height: 3px;
          position: absolute;
@@ -70,316 +70,92 @@
         import Joystick from "/js/modules/controllers/Joystick.js"
         import Keyboard from "/js/modules/controllers/Keyboard.js"
         import Mouse from "/js/modules/controllers/Mouse.js"
-        import HeightMap from "/js/modules/generators/HeightMap.js"
+        import WorldMap from "/js/modules/generators/WorldMap.js"
         import '/js/cannon/build/cannon.min.js'
         import WorldComponent from "/js/modules/operators/WorldComponent.js"
+        import Player from "/js/modules/operators/Player.js"
+        import Assets from "/js/modules/operators/Assets.js"
+        import GameEngine from "/js/modules/engines/GameEngine.js"
+        import RenderingEngine from "/js/modules/engines/RenderingEngine.js"
         import {DeviceChecker} from "/js/modules/utils/DeviceUtils.js"
-        //Define core classes
-            //Player class hold the data of a player
-            class Player {
-                    constructor() {
-                        this.isMoving = false;
-                        this.isJumping = false;
-                        this.isDestroying = false;
-                        this.isPlacing = false;
-                        this.isGrounded = false;
-                        this.movingAngle = null;
-                        this.snapVec = {
-                            x: 0,
-                            y: 0
-                        };
-                        this.speed = 5;
-                        this.geometry = new THREE.BoxGeometry(0.25,2,0.25);
-                        this.handGeo = new THREE.BoxGeometry(0.1,0.5,0.1);
-                        this.material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
-                        this.mesh = new THREE.Mesh( this.geometry, this.material );
-                        this.handMesh = new THREE.Mesh(this.handGeo,this.material)
-                        this.shape = new CANNON.Box(new CANNON.Vec3(0.25/2, 2/2, 0.25/2));
-                        this.body = new CANNON.Body({ mass: 0.0000001});
-                        this.body.addShape(this.shape)
-                        this.body.position.x = 0
-                        this.body.position.y = 15
-                        this.body.position.z = 0
-                        this.body.angularDamping=1;
-                        this.body.linearDamping=0;
-                        this.body.allowSleep = true;
-                        this.body.sleepSpeedLimit = 1;
-                        this.body.sleepTimeLimit = 1.0;
-                        this.lookAt = null;
-                        this.destroyCD = 2;
-                        this.jumpCD = 10;
-                        this.currDestroyCD = 0;
-                        this.currJumpCD = 0;
-                        this.spawn = (scene,world) => {
-                            scene.add(player.mesh);
-                            world.addBody(player.body);
-                        }
-                        this.doMovement = (speed,angle,inputAngle) => {
-                            if (!this.isGrounded) {
-                                if (player.isMoving) {
-                                        this.body.velocity.x = 0.35*this.snapVec.x + 0.5*speed*Math.sin(angle+inputAngle)
-                                        this.body.velocity.z = 0.35*this.snapVec.y + 0.5*speed*Math.cos(angle+inputAngle)
-                                    } else {
-                                        this.body.velocity.x = 0.35*this.snapVec.x
-                                        this.body.velocity.z = 0.35*this.snapVec.y
-                                    }
-                            }
-                            if (this.isMoving) {
-                                this.body.sleepState = 0
-                                if (!this.isGrounded) {
-                                } else {
-                                    this.body.velocity.x = speed*Math.sin(angle+inputAngle)
-                                    this.body.velocity.z = speed*Math.cos(angle+inputAngle)
-                                    this.snapVec.x = this.body.velocity.x
-                                    this.snapVec.y = this.body.velocity.z
-                                }     
-                            } else if (!this.isMoving&&this.isGrounded) {
-                            this.body.velocity.x = 0
-                            this.body.velocity.z = 0
-                            this.snapVec.x = this.body.velocity.x
-                            this.snapVec.y = this.body.velocity.z
-                            }
-                            if (this.currJumpCD > 0) {this.currJumpCD--}
-                            if (this.isJumping&&this.currJumpCD === 0) {
-                                this.body.sleepState = 0
-                                if (!this.isGrounded) {
-                                    return
-                                } else {
-                                    this.currJumpCD = this.jumpCD;
-                                    this.body.velocity.y = 5.8;
-                                }
-                            }
-                        }
-                        
-                        this.doAction = (scene,world,wrcomp) => {
-                            if (this.currDestroyCD > 0) {this.currDestroyCD--}
-                            if (this.isDestroying&&this.currDestroyCD === 0) {
-                                this.currDestroyCD = this.destroyCD;
-                                let selectedObject = wrcomp?.objectMap.find(object => (object.x === this.lookAt?.object.position.x&&object.y === this.lookAt?.object.position.y&&object.z === this.lookAt?.object.position.z));
-                                if (selectedObject !== undefined) {
-                                    WRCOMP.removeObject(selectedObject,scene,world,matter)
-                                }
-                            };
-                            if (this.isPlacing) {
-                                console.log("Cumming soon!")
-                            }
-                        }
-                        this.vectors = {
-                            vec1 : new THREE.Vector3(this.body.position.x+0.25,this.body.position.y,this.body.position.z),
-                            vec2 : new THREE.Vector3(this.body.position.x,this.body.position.y,this.body.position.z+0.25),
-                            vec3 : new THREE.Vector3(this.body.position.x,this.body.position.y,this.body.position.z+0.25),
-                            vec4 : new THREE.Vector3(this.body.position.x,this.body.position.y,this.body.position.z),
-                            vecDown : new THREE.Vector3(0,-1,0),
-                        }
-                        this.groundRays = {
-                             ray1 : new THREE.Raycaster(),
-                             ray2 : new THREE.Raycaster(),
-                             ray3 : new THREE.Raycaster(),
-                             ray4 : new THREE.Raycaster(),
-                        }
-                
-                        this.getGroundingStatus = (scene) => {
-                            this.vectors.vec1.set(this.body.position.x+0.25,this.body.position.y,this.body.position.z)
-                            this.vectors.vec2.set(this.body.position.x,this.body.position.y,this.body.position.z+0.25)
-                            this.vectors.vec3.set(this.body.position.x,this.body.position.y,this.body.position.z+0.25)
-                            this.vectors.vec4.set(this.body.position.x,this.body.position.y,this.body.position.z)
-                            this.groundRays.ray1.set(this.vectors.vec1,this.vectors.vecDown);
-                            this.groundRays.ray2.set(this.vectors.vec2,this.vectors.vecDown);
-                            this.groundRays.ray3.set(this.vectors.vec3,this.vectors.vecDown);
-                            this.groundRays.ray4.set(this.vectors.vec4,this.vectors.vecDown);
-                            var belows1 = this.groundRays.ray1.intersectObjects(scene.children)
-                            var belows2 = this.groundRays.ray2.intersectObjects(scene.children)
-                            var belows3 = this.groundRays.ray3.intersectObjects(scene.children)
-                            var belows4 = this.groundRays.ray4.intersectObjects(scene.children)
-                            if (belows1[0]===undefined&&belows2[0]===undefined&&belows3[0]===undefined&&belows4[0]===undefined) {
-                                this.isGrounded = false; 
-                            } else {
-                                if (belows1[0]?.distance <= 1||belows2[0]?.distance <= 1||belows3[0]?.distance <= 1||belows4[0]?.distance <= 1) {
-                                    this.isGrounded = true;
-                                } else {
-                                    this.isGrounded = false; 
-                                }
-                            }
-                        }
-                    }      
-                }
-            //Game engine is an utility class which perform game logics
-            class GameEngine {
-                    constructor() {
-                        this.camera = {
-                            dirVector: new THREE.Vector3(),
-                            dirAngle: null
-                        }
-                        }
-                    updatePlayerViewport(camera,player) {
-                        camera.position.x = player.body.position.x;
-                        camera.position.z = player.body.position.z;
-                        camera.position.y = player.body.position.y+0.6;
-                    }
-                    updatePlayerHitbox(player) {
-                        player.mesh.position.set(player.body.position.x, player.body.position.y, player.body.position.z);
-                        player.mesh.quaternion.set(player.body.quaternion.x, player.body.quaternion.y, player.body.quaternion.z, player.body.quaternion.w);
-                    }
-                    getCameraAngle(camera) {
-                        camera.getWorldDirection(this.camera.dirVector)
-                        this.camera.dirAngle = Math.atan2(this.camera.dirVector.x,this.camera.dirVector.z);  
-                        
-                    }
-                    handleUI(player,angle) {
-                        player.handMesh.position.x = 0.5*Math.sin(angle) + player.mesh.position.x
-                        player.handMesh.position.z = 0.5*Math.cos(angle) + player.mesh.position.z
-                        player.handMesh.position.y = player.mesh.position.y +0.2;
-                    }
-                }
             //Setup THREE JS Components
                 let camera, scene, renderer, controls;
                 //THREE JS Camera
                 camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.01, 50 );
-                if (DeviceChecker.isMobile()) {
-                    controls = new DeviceOrientationControls( camera );
-                    controls.connect()
-                } else {
+                //if (DeviceChecker.isMobile()) {
+                //    controls = new DeviceOrientationControls( camera );
+                //    controls.connect()
+                //} else {
                     controls = new PointerLockControls( camera,document.body )
                     controls.minPolarAngle = 0.05;
                     controls.maxPolarAngle = Math.PI - 0.05;
                     document.addEventListener("click", ()=>{controls.lock()})
-                }
-                //Create a height map with Perlin Noise
-                var hMap = new HeightMap(64)
-                hMap.generate(Math.random()*1000)
-                console.log(hMap.heightMap)
+                //}
                 scene = new THREE.Scene()
-                const loader = new THREE.TextureLoader();
-                const texture = loader.load(
-                    '/images/background.png',
-                    () => {
-                    const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-                    rt.fromEquirectangularTexture(renderer, texture);
-                    scene.background = rt;
-                    });
-                //Once used to load THREE Scene
-                /*scene = new THREE.Scene();
-                //Define a scene loader
-                const loader = new THREE.ObjectLoader();
-                function loadTHREEScene(path) {
-                    loader.load(
-                    path,
-                    function ( obj ) {
-                        scene.add( obj );
-                    },
-                    function ( xhr ) {
-                        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-                    },
-                    function ( err ) {
-                        console.error( 'Unable to load' );
-                    }
-                );
-                }*/
-            //Setup world engine and variables
-            const world = new CANNON.World()
-            world.solver.iterations = 10;
-            world.solver.tolerance = 0;
-            world.gravity.set(0,-15,0);
-            world.allowSleep = true;
-            //Raycaster for player corshair
-            var corshair = new THREE.Vector2();
-            corshair.x = 0;
-            corshair.y = 0;
-            var raycaster = new THREE.Raycaster();
-            //Setup core objects 
-            var Engine = new GameEngine()
-            var player = new Player()
-            var WRCOMP = new WorldComponent()
+                //Setup world engine and variables
+                const world = new CANNON.World()
+                world.solver.iterations = 10;
+                world.solver.tolerance = 0;
+                world.gravity.set(0,-15,0);
+                world.allowSleep = true;
+                //Raycaster for player crosshair
+                //Setup core objects 
+                var Engine = new GameEngine()
+                var RenderEngine = new RenderingEngine(30);
+                var WRCOMP = new WorldComponent()
+                var player = new Player()
                 var keyboard = new Keyboard()
                 var joystick = new Joystick()
                 var mouse = new Mouse()
-                //Placeholder Schema
-                var matter = {
-                    top : new THREE.MeshStandardMaterial( {map:new THREE.TextureLoader().load("/images/grass-top.jpg")}), 
-                    side : new THREE.MeshStandardMaterial( {map:new THREE.TextureLoader().load("/images/grass-side.png")}), 
-                    bottom : new THREE.MeshStandardMaterial( {map:new THREE.TextureLoader().load("/images/grass-bottom.jpg")}), 
-                }
-            //Make a function to pre-load data and attributes to the scene
+                //Load schema
+                WRCOMP.textures.push(new Assets.TextureSchema("grass",{top:"/images/grass-top.jpg",side:"/images/grass-side.png",bottom:"/images/grass-bottom.jpg"}))
+                //Make a function to pre-load data and attributes to the scene
                 function load() {
-                    keyboard.connect()
-                    mouse.connect()
-                    player.spawn(scene,world)
-                    //WRCOMP.loadLayersMap(map,scene,world);
-                    WRCOMP.loadObjectMap(hMap)
-                    WRCOMP.loadHeightMap(hMap,scene,matter);
-                    WRCOMP.createLightSource(scene)
-                    world.addContactMaterial(WRCOMP.physicsContactMaterial); 
-                    //Setup camera
-                    //Load a scene
-
-                    player.body.material = WRCOMP.physicsMaterial;
                     //Setup the renderer/canvas
                     renderer = new THREE.WebGLRenderer( { antialias: true } );
                     renderer.setPixelRatio( window.devicePixelRatio );
                     renderer.setSize( window.innerWidth, window.innerHeight );
                     //Append the renderer into the container
                     document.getElementById('container').appendChild( renderer.domElement );
+                    keyboard.connect()
+                    mouse.connect()
+                    WRCOMP.createSkybox(scene,renderer,'/images/background.png')
+                    WRCOMP.loadObjectMap(new WorldMap(16))
+                    WRCOMP.loadHeightMap(scene);
+                    WRCOMP.createLightSource(scene)
+                    world.addContactMaterial(WRCOMP.physicsContactMaterial); 
+                    player.body.material = WRCOMP.physicsMaterial;
+                    player.spawn(scene,world)
                 }
-            //Make a function to update the renderer and animate it with FPS throttling             
-            var stop = false;
-            var frameCount = 0;
-            var fps, fpsInterval, startTime, now, then, elapsed;
-            //Initialize the timer variables and start the animation
-            function startAnimating(fps) {
-                fpsInterval = 1000 / fps;
-                then = Date.now();
-                startTime = then;
-                animate();
-            }
-            function animate() {
-                requestAnimationFrame(animate);
-                now = Date.now();
-                elapsed = now - then;
-                if (elapsed > fpsInterval) {
-                    then = now - (elapsed % fpsInterval);
+                load()
+                RenderEngine.render = function () {
                     if (DeviceChecker.isMobile()) {
-                        //Bind player data with controller data
-                        player.movingAngle = joystick.getAngle()
-                        player.isMoving = joystick.getState()
-                        controls.update()
-                    } else {
-                        keyboard.update()
-                        player.isDestroying = mouse.state.destroy;
-                        player.movingAngle = keyboard.inputAngle;
-                        player.isMoving = keyboard.isActive;
-                        player.isJumping = keyboard.isJumping;
-                    }  
-                        raycaster.setFromCamera( corshair, camera)
-                        const intersects = raycaster.intersectObjects(scene.children)
-                        
-                       keyboard.logParam = scene.children;
-                        if (intersects[0] !== undefined) {
-                            player.lookAt = intersects[0];
+                            //Bind player data with controller data
+                            player.movingAngle = joystick.getAngle()
+                            player.isMoving = joystick.getState()
+                            controls.update()
                         } else {
-                            player.lookAt = null;
-                        }
-                        //Check if a player is on the ground or not
-                        
-                        player.getGroundingStatus(scene)
-                        //Optimize hitbox to appear only where it's needed
-                        WRCOMP.getHitboxes(player,world)
-                        //Move 1/30s in physic time
-                        world.step(1/25)
-                        //Update camera angle
-                        Engine.getCameraAngle(camera)
-                        //Do player movement
-                        player.doMovement(player.speed,Engine.camera.dirAngle,-player.movingAngle)
-                        player.doAction(scene,world,WRCOMP);
-                        //Update player viewport to match player movement
-                        Engine.updatePlayerHitbox(player)
-                        Engine.updatePlayerViewport(camera,player)
-                        renderer.render( scene, camera );
-                        //Request another frame
-
-                        }
+                            player.updatePCControllers(keyboard,mouse)
+                        }  
+                        keyboard.logParam = scene.children;
+                        player.getCrosshairTarget(camera,scene) 
+                            //Optimize hitbox to appear only where it's needed
+                            WRCOMP.getHitboxes(player,world)
+                            //Check if a player is on the ground or not
+                            player.getGroundingStatus(scene)
+                            //Iterate physic time
+                            world.step(1/RenderEngine.fps)
+                            //Update camera angle
+                            Engine.getCameraAngle(camera)
+                            //Do player movement
+                            player.doMovement(player.speed,Engine.camera.dirAngle,-player.movingAngle)
+                            player.doAction(scene,world,WRCOMP);
+                            //Update player viewport to match player movement
+                            Engine.updatePlayerHitbox(player)
+                            Engine.updatePlayerViewport(camera,player)
+                            renderer.render( scene, camera );
                 }
-            load()
-            startAnimating(30)
+                RenderEngine.startAnimating()
 		</script>
 	</body>
 </html>

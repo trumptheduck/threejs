@@ -115,6 +115,4 @@ export default class Keyboard {
         }
         this.isJumping = this.state.jump
     }
-    
-    
 }

@@ -2,7 +2,9 @@ import * as THREE from "/js/three/build/three.module.js"
 import '/js/cannon/build/cannon.min.js'
 export default class WorldComponent {
     constructor() {
-        this.objectList = [];
+        this.mapSize = null;
+        this.mapHeight = null;
+        this.textures = [];
         this.objectMap = [];
         this.vertices = {
             w : new Float32Array( [
@@ -105,11 +107,18 @@ export default class WorldComponent {
         this.shape = new CANNON.Box(new CANNON.Vec3(1.3/2,1/2,1.3/2));
         this.setAttribute()
         this.computeVertexNormals()
+        this.missingTexture = {
+            texture :{            
+            top: new THREE.MeshStandardMaterial({ color: 0xffffff }),
+            side: new THREE.MeshStandardMaterial({ color: 0xffffff }),
+            bottom: new THREE.MeshStandardMaterial({ color: 0xffffff }),
+            }
+        }
         this.physicsMaterial = new CANNON.Material("groundMaterial");
         this.physicsContactMaterial = new CANNON.ContactMaterial(
             this.physicsMaterial,
             this.physicsMaterial,
-            {friction:0,restitution :0.01,contactEquationStiffness:10e100,contactEquationRelaxation:1000,frictionEquationRelaxation:1000});
+            {friction:0,restitution :0.1,contactEquationStiffness:10e100,contactEquationRelaxation:100,frictionEquationRelaxation:1000});
     }
     createLightSource(scene) {
         var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
@@ -131,63 +140,81 @@ export default class WorldComponent {
             dirLight.shadow.camera.far = 3500;
             dirLight.shadow.bias = -0.0001;
     }
+    createSkybox(scene,renderer,path) {
+        const loader = new THREE.TextureLoader();
+        const texture = loader.load(
+            path,
+            () => {
+            const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+            rt.fromEquirectangularTexture(renderer, texture);
+            scene.background = rt;
+            });
+    }
     loadObjectMap(map) {
-        for(let i = 0; i< map.heightMap.length;i++) {
-            for (let j = 0; j <map.heightMap[i];j++) {
-            this.objectMap.push({x:(i%map.size),y:j-1,z:Math.floor(i/map.size)})
-        }
+        this.objectMap = map.objectMap;
+        this.mapSize = map.size;
+        this.mapHeight = map.maxHeight;
+    }
+    findObjectByCoords(x,y,z) {
+        if (x>this.mapSize-1||y>this.mapHeight-1||z>this.mapSize-1||x<0||y<0||z<0) {
+            return {position:{x:x,y:y,z:z},content:false};
+        } else {
+            return this.objectMap[(z)*((this.mapSize)*this.mapHeight)+(x)*(this.mapHeight)+ (y)]
         }
     }
-    loadHeightMap(map,scene,material) {
-        for(let i = 0; i< map.heightMap.length;i++) {
-            for (let j = 0; j <map.heightMap[i];j++) {
-                this.renderBuffer({x:(i%map.size),y:j-1,z:Math.floor(i/map.size)},scene,material)
-            }
-            
-        }
+    loadHeightMap(scene) {
+        this.objectMap.forEach(element => {
+            if (element.content !== false) {
+                this.renderBuffer(element,scene)
+            }   
+        })
     }
-    renderBuffer(pos,scene,material) {
-        const meshW = new THREE.Mesh( this.geometry.w, material.side );
-        meshW.position.x = pos.x;
-        meshW.position.y = pos.y;
-        meshW.position.z = pos.z;
-        const meshN = new THREE.Mesh( this.geometry.n, material.side );
-        meshN.position.x = pos.x;
-        meshN.position.y = pos.y;
-        meshN.position.z = pos.z;
-        const meshT = new THREE.Mesh( this.geometry.t, material.top );
-        meshT.position.x = pos.x;
-        meshT.position.y = pos.y;
-        meshT.position.z = pos.z;
-        const meshB = new THREE.Mesh( this.geometry.b, material.bottom );
-        meshB.position.x = pos.x;
-        meshB.position.y = pos.y;
-        meshB.position.z = pos.z;
-        const meshS = new THREE.Mesh( this.geometry.s, material.side );
-        meshS.position.x = pos.x;
-        meshS.position.y = pos.y;
-        meshS.position.z = pos.z;
-        const meshE = new THREE.Mesh( this.geometry.e, material.side );
-        meshE.position.x = pos.x;
-        meshE.position.y = pos.y;
-        meshE.position.z = pos.z;
+    renderBuffer(object,scene) {
+        var material = this.textures.find(texture => texture.name === object.schema )
+        if (material === undefined) {
+            material = this.missingTexture
+        }
+        const meshW = new THREE.Mesh( this.geometry.w, material.texture.side );
+        meshW.position.x = object.position.x;
+        meshW.position.y = object.position.y;
+        meshW.position.z = object.position.z;
+        const meshN = new THREE.Mesh( this.geometry.n, material.texture.side );
+        meshN.position.x = object.position.x;
+        meshN.position.y = object.position.y;
+        meshN.position.z = object.position.z;
+        const meshT = new THREE.Mesh( this.geometry.t, material.texture.top );
+        meshT.position.x = object.position.x;
+        meshT.position.y = object.position.y;
+        meshT.position.z = object.position.z;
+        const meshB = new THREE.Mesh( this.geometry.b, material.texture.bottom );
+        meshB.position.x = object.position.x;
+        meshB.position.y = object.position.y;
+        meshB.position.z = object.position.z;
+        const meshS = new THREE.Mesh( this.geometry.s, material.texture.side );
+        meshS.position.x = object.position.x;
+        meshS.position.y = object.position.y;
+        meshS.position.z = object.position.z;
+        const meshE = new THREE.Mesh( this.geometry.e, material.texture.side );
+        meshE.position.x = object.position.x;
+        meshE.position.y = object.position.y;
+        meshE.position.z = object.position.z;
         var needToRender = {t:true,b:true,n:true,w:true,e:true,s:true}
-        if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y+1&&object.z === pos.z))!==undefined) {
+        if(this.findObjectByCoords(object.position.x,object.position.y+1,object.position.z)?.content !== false) {
             needToRender.t = false;
         }
-        if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y-1&&object.z === pos.z))!==undefined) {
+        if(this.findObjectByCoords(object.position.x,object.position.y-1,object.position.z)?.content !== false) {
             needToRender.b = false;
         }
-        if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y&&object.z === pos.z-1))!==undefined) {
+        if(this.findObjectByCoords(object.position.x,object.position.y,object.position.z-1)?.content !== false) {
             needToRender.n = false;
         }
-        if(this.objectMap.find(object => (object.x === pos.x&&object.y === pos.y&&object.z === pos.z+1))!==undefined) {
+        if(this.findObjectByCoords(object.position.x,object.position.y,object.position.z+1)?.content !== false) {
             needToRender.w = false;
         }
-        if(this.objectMap.find(object => (object.x-1 === pos.x&&object.y === pos.y&&object.z === pos.z))!==undefined) {
+        if(this.findObjectByCoords(object.position.x+1,object.position.y,object.position.z)?.content !== false) {
             needToRender.s = false;
         }
-        if(this.objectMap.find(object => (object.x+1 === pos.x&&object.y === pos.y&&object.z === pos.z))!==undefined) {
+        if(this.findObjectByCoords(object.position.x-1,object.position.y,object.position.z)?.content !== false) {
             needToRender.e = false;
         }
         if (!needToRender.t) {
@@ -222,26 +249,28 @@ export default class WorldComponent {
         }       
     }
     getHitboxes(player,world) {
-        for (let x = -2;x<=2;x++) {
-            for(let y = -2;y<=2;y++) {
-                for(let z= -2;z<=2;z++) {
-                    if (Math.abs(x)<=1&&Math.abs(y)<=2&&Math.abs(z)<=1) {
-                        if (this.objectMap.find(object => (object.x === Math.round(player.body.position.x)+x&&object.y === Math.round(player.body.position.y)+y&&object.z === Math.round(player.body.position.z)+z))!==undefined) {
-                            let obj = this.objectMap.find(object => (object.x === Math.round(player.body.position.x)+x&&object.y === Math.round(player.body.position.y)+y&&object.z === Math.round(player.body.position.z)+z))   
-                            if (world.bodies.find(body => body.position.x === obj.x&&body.position.y === obj.y&&body.position.z === obj.z)===undefined) {
+        for (let x = -3;x<=3;x++) {
+            for(let y = -3;y<=3;y++) {
+                for(let z= -3;z<=3;z++) {
+                    if (Math.abs(x)<=2&&Math.abs(y)<=2&&Math.abs(z)<=2) {           
+                        var obj = this.findObjectByCoords(Math.round(player.body.position.x)+x,Math.round(player.body.position.y)+y,Math.round(player.body.position.z)+z)
+                        if (obj.content !== true) {
+                            continue;
+                           } else {
+                            if (world.bodies.find(body => body.position.x === obj.position.x&&body.position.y === obj.position.y&&body.position.z === obj.position.z)===undefined) {
                                 let cBody = new CANNON.Body({ mass: 0});
                                 cBody.addShape(this.shape)
                                 cBody.material = this.physicsMaterial
                                 cBody.type = 0
-                                cBody.position.x = obj.x
-                                cBody.position.y = obj.y
-                                cBody.position.z = obj.z
+                                cBody.position.x = obj.position.x
+                                cBody.position.y = obj.position.y
+                                cBody.position.z = obj.position.z
                                 world.addBody(cBody)
                                }
                            }
                     } else {
-                        if (world.bodies.find(body => (body.position.x === Math.round(player.body.position.x)+x&&body.position.y === Math.round(player.body.position.y)+y&&body.position.z === Math.round(player.body.position.z)+z))!==undefined) {
-                            let unusedBody = world.bodies.find(body => (body.position.x === Math.round(player.body.position.x)+x&&body.position.y === Math.round(player.body.position.y)+y&&body.position.z === Math.round(player.body.position.z)+z))
+                        let unusedBody = world.bodies.find(body => (body.position.x === Math.round(player.body.position.x)+x&&body.position.y === Math.round(player.body.position.y)+y&&body.position.z === Math.round(player.body.position.z)+z))
+                        if (unusedBody!==undefined) {
                             world.removeBody(unusedBody)
                         }
                     }
@@ -249,26 +278,26 @@ export default class WorldComponent {
             }
         }; 
     };
-    updateMeshNearObject(selectedObject,scene,material) {
+    updateMeshNearObject(selectedObject,scene) {
         for (let x = -1;x<=1;x++) {
             for(let y = -1;y<=1;y++) {
                 for(let z= -1;z<=1;z++) {
-                    var datedMeshes = scene.children.filter(meshes => meshes.position.x === Math.round(selectedObject.x)+x&&meshes.position.y === Math.round(selectedObject.y)+y&&meshes.position.z === Math.round(selectedObject.z)+z);
+                    var datedMeshes = scene.children.filter(meshes => meshes.position.x === Math.round(selectedObject.position.x)+x&&meshes.position.y === Math.round(selectedObject.position.y)+y&&meshes.position.z === Math.round(selectedObject.position.z)+z);
                         datedMeshes.forEach(mesh => {
                             scene.remove(mesh)
                         })
-                    var objectToUpdate = this.objectMap.find(object => (object.x === Math.round(selectedObject.x)+x&&object.y === Math.round(selectedObject.y)+y&&object.z === Math.round(selectedObject.z)+z));
-                    if (objectToUpdate !== undefined) {
-                        this.renderBuffer({x:objectToUpdate.x,y:objectToUpdate.y,z:objectToUpdate.z},scene,material)
+                    var objectToUpdate = this.findObjectByCoords(Math.round(selectedObject.position.x)+x,Math.round(selectedObject.position.y)+y,Math.round(selectedObject.position.z)+z)
+                    if (objectToUpdate?.content !== false) {
+                        this.renderBuffer(objectToUpdate,scene)
                     }
                 }
             }
         }
     };
-    removeObject(selectedObject,scene,world,material) {
-        this.objectMap.splice(this.objectMap.indexOf(selectedObject),1)
-        this.updateMeshNearObject(selectedObject,scene,material)
-        var selectedBody = world.bodies.find(body => body.position.x === selectedObject.x&&body.position.y === selectedObject.y&&body.position.z === selectedObject.z);
+    removeObject(selectedObject,scene,world) {
+        selectedObject.content = false;
+        this.updateMeshNearObject(selectedObject,scene)
+        var selectedBody = world.bodies.find(body => body.position.x === selectedObject.position.x&&body.position.y === selectedObject.position.y&&body.position.z === selectedObject.position.z);
         if (selectedBody !== undefined) {
             world.removeBody(selectedBody)
         } 
