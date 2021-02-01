@@ -30,6 +30,123 @@
             height: 100%;
             z-index: 1;
         }
+        #title-screen {
+            position: fixed;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            background-image: url('/images/title-background.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+            #title-text {
+                position: absolute;
+                top: 10%;
+                left: 30%;
+                width: 40%;
+                height: 30%;
+                background-color: transparent;
+                background-image: url('/images/logo.png');
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+            #title-button-play {
+                cursor: pointer;
+                position: absolute;
+                top: 43%;
+                left: 30%;
+                width: 40%;
+                height: 10%;
+                background-color: gray;
+                border: groove 3px white;
+            }
+            #title-button-play:hover {
+                filter: brightness(0.6);
+            }
+            #title-button-credit {
+                cursor: pointer;
+                position: absolute;
+                top: 60%;
+                left: 30%;
+                width: 40%;
+                height: 10%;
+                background-color: gray;
+                border: groove 3px white;
+            }
+            #title-button-credit:hover {
+                filter: brightness(0.6);
+            }
+            .button-text {
+                cursor: pointer;
+                color: rgb(240, 240, 240);
+                font-size: 3.1vh;
+                font-weight: bold;
+                text-align: center;
+            }
+        #menu-world {
+            display: none;
+            position: fixed;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            background-image: url('/images/dirt-background.jpg');
+            background-repeat: repeat;
+        }
+            #menu-world-input-seed {
+                position: absolute;
+                top: 20%;
+                left: 28%;
+                width: 30%;
+                height: 6%;
+                padding: 5px;
+                border: groove 3px white;
+                background-color: black;
+                color: white;
+            }
+            #menu-world-input-size {
+                position: absolute;
+                top: 20%;
+                left: 62%;
+                width: 10%;
+                height: 6%;
+                padding: 5px;
+                border: groove 3px white;
+                background-color: black;
+                color: white;
+            }
+            #menu-world-button-generate {
+                cursor: pointer;
+                position: absolute;
+                top: 60%;
+                left: 30%;
+                width: 40%;
+                height: 10%;
+                background-color: gray;
+                border: groove 3px white;
+            }
+            #menu-world-button-generate:hover{
+                filter: brightness(0.6);
+            }
+            #menu-world-setting-wrapper {
+                top:0%;
+                left: 0%;
+                width: 100%;
+                height: 100%;
+            }
+            #loading-text {
+                position: relative;
+                cursor: none;
+                color: rgb(240, 240, 240);
+                font-size: 3.1vh;
+                top: 40vh;
+                font-weight: bold;
+                text-align: center;
+            }
+
     </style>
 	<body>
         <div id="container"></div>
@@ -63,6 +180,23 @@
         </div>
         <script src="/js/pwa.js"></script>
         <script src="/js/status.js"></script>
+        <div id="gui-layer" style="position: absolute;top: 0%;left: 0%;width: 100%;height: 100%;">
+            <div id="title-screen" >
+                <div id="title-text"></div>
+                <div id="title-button-play"><p class="button-text">PLAY</p></div>
+                <div id="title-button-credit"><p class="button-text">CREDIT</p></div>
+            </div>
+            <div id="menu-world">
+                <div id="menu-world-setting-wrapper">            
+                    <input id="menu-world-input-size" type="number" value="32">
+                    <input id="menu-world-input-seed" type="number" placeholder="World Seed">
+                    <div id="menu-world-button-generate"><p class="button-text">Generate World</p></div>
+                </div>
+                <div id="menu-world-loading-wrapper"><p id="loading-text">Generating World...</p></div>
+            </div>
+        </div>
+        <script src="/js/pwa.js"></script>
+        <script src="/js/status.js"></script>
 		<script type="module">
         import * as THREE from "/js/three/build/three.module.js"
         import {DeviceOrientationControls} from "/js/three/examples/jsm/controls/DeviceOrientationControls.js"
@@ -78,6 +212,28 @@
         import GameEngine from "/js/modules/engines/GameEngine.js"
         import RenderingEngine from "/js/modules/engines/RenderingEngine.js"
         import {DeviceChecker} from "/js/modules/utils/DeviceUtils.js"
+            class DOMManipulator {
+                constructor() {
+                    this.title = {
+                        play :() => {
+                            document.getElementById('menu-world').style.display = 'block'
+                        },
+                        credit : {}
+                    }
+                    this.menu = {
+                        generateWorld : () => {
+                            document.getElementById('menu-world-setting-wrapper').style.display = 'none'
+                            document.getElementById('menu-world-loading-wrapper').style.display = 'block'
+                            const wSeed = document.getElementById('menu-world-input-seed').value;
+                            const wSize = document.getElementById('menu-world-input-size').value;
+                            load(wSize,wSeed)
+                        }
+                    }
+                }
+            }
+            var GUI = new DOMManipulator()
+            document.getElementById("title-button-play").addEventListener('click',()=>{GUI.title.play()})
+            document.getElementById("menu-world-button-generate").addEventListener('click',()=>{GUI.menu.generateWorld()})
             //Setup THREE JS Components
                 let camera, scene, renderer, controls;
                 //THREE JS Camera
@@ -89,7 +245,6 @@
                     controls = new PointerLockControls( camera,document.body )
                     controls.minPolarAngle = 0.05;
                     controls.maxPolarAngle = Math.PI - 0.05;
-                    document.addEventListener("click", ()=>{controls.lock()})
                 //}
                 scene = new THREE.Scene()
                 //Setup world engine and variables
@@ -110,7 +265,7 @@
                 //Load schema
                 WRCOMP.textures.push(new Assets.TextureSchema("grass",{top:"/images/grass-top.jpg",side:"/images/grass-side.png",bottom:"/images/grass-bottom.jpg"}))
                 //Make a function to pre-load data and attributes to the scene
-                function load() {
+                function load(mapSize,seed) {
                     //Setup the renderer/canvas
                     renderer = new THREE.WebGLRenderer( { antialias: true } );
                     renderer.setPixelRatio( window.devicePixelRatio );
@@ -120,14 +275,16 @@
                     keyboard.connect()
                     mouse.connect()
                     WRCOMP.createSkybox(scene,renderer,'/images/background.png')
-                    WRCOMP.loadObjectMap(new WorldMap(16))
+                    WRCOMP.loadObjectMap(new WorldMap(mapSize,seed))
                     WRCOMP.loadHeightMap(scene);
                     WRCOMP.createLightSource(scene)
                     world.addContactMaterial(WRCOMP.physicsContactMaterial); 
                     player.body.material = WRCOMP.physicsMaterial;
                     player.spawn(scene,world)
+                    RenderEngine.startAnimating()
+                    document.getElementById('gui-layer').style.display = 'none'
+                    document.addEventListener("click", ()=>{controls.lock()})
                 }
-                load()
                 RenderEngine.render = function () {
                     if (DeviceChecker.isMobile()) {
                             //Bind player data with controller data
@@ -155,7 +312,7 @@
                             Engine.updatePlayerViewport(camera,player)
                             renderer.render( scene, camera );
                 }
-                RenderEngine.startAnimating()
+                
 		</script>
 	</body>
 </html>
