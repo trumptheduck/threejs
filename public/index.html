@@ -146,7 +146,51 @@
                 font-weight: bold;
                 text-align: center;
             }
-
+            #UI-inventory {
+  margin: 0;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background-color: rgb(202, 202, 202);
+  width: fit-content;
+  height: 170px;
+  padding: 20px;
+  border: rgb(223, 223, 223) groove 4px;
+}
+#UI-hotbar {
+    margin: 0;
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    transform: translate(-50%);
+    background-color: transparent;
+    width: fit-content;
+    height: 54px;
+    padding: 5px;
+    border: rgb(223, 223, 223) groove 4px;
+}
+.grid-container {
+  display: grid;
+  grid-template-columns: 52px 52px 52px 52px 52px 52px 52px 52px 52px;
+  grid-column-gap: 5px;
+  grid-row-gap: 5px;
+  
+}
+.grid-item {
+    width: 50px;height: 50px;border: groove 1px grey;
+    padding: 0px;
+}
+.inventory-slot{
+    background-color: whitesmoke;
+}
+.hotbar-slot {
+    background-color: whitesmoke;
+    opacity: 0.5;
+}
+.hotbar-slot.selected{
+    opacity: 1;
+}
     </style>
 	<body>
         <div id="container"></div>
@@ -177,9 +221,47 @@
          background-color: transparent;
          margin: auto;"></div>    
         </div>
+        <div class="grid-container" id="UI-inventory">
+            <div id="ivt-9" class="grid-item inventory-slot"></div>
+            <div id="ivt-10" class="grid-item inventory-slot"></div>
+            <div id="ivt-11" class="grid-item inventory-slot"></div>
+            <div id="ivt-12" class="grid-item inventory-slot"></div>
+            <div id="ivt-13" class="grid-item inventory-slot"></div>
+            <div id="ivt-14" class="grid-item inventory-slot"></div>
+            <div id="ivt-15" class="grid-item inventory-slot"></div>
+            <div id="ivt-16" class="grid-item inventory-slot"></div>
+            <div id="ivt-17" class="grid-item inventory-slot"></div>
+            <div id="ivt-18" class="grid-item inventory-slot"></div>
+            <div id="ivt-19" class="grid-item inventory-slot"></div>
+            <div id="ivt-20" class="grid-item inventory-slot"></div>
+            <div id="ivt-21" class="grid-item inventory-slot"></div>
+            <div id="ivt-22" class="grid-item inventory-slot"></div>
+            <div id="ivt-23" class="grid-item inventory-slot"></div>
+            <div id="ivt-24" class="grid-item inventory-slot"></div>
+            <div id="ivt-25" class="grid-item inventory-slot"></div>
+            <div id="ivt-26" class="grid-item inventory-slot"></div>
+            <div id="ivt-27" class="grid-item inventory-slot"></div>
+            <div id="ivt-28" class="grid-item inventory-slot"></div>
+            <div id="ivt-29" class="grid-item inventory-slot"></div>
+            <div id="ivt-30" class="grid-item inventory-slot"></div>
+            <div id="ivt-31" class="grid-item inventory-slot"></div>
+            <div id="ivt-32" class="grid-item inventory-slot"></div>
+            <div id="ivt-33" class="grid-item inventory-slot"></div>
+            <div id="ivt-34" class="grid-item inventory-slot"></div>
+            <div id="ivt-35" class="grid-item inventory-slot"></div>
+          </div>
+          <div class="grid-container" id="UI-hotbar">
+            <div id="ivt-0" class="grid-item hotbar-slot"></div>
+            <div id="ivt-1" class="grid-item hotbar-slot selected"></div>
+            <div id="ivt-2" class="grid-item hotbar-slot"></div>
+            <div id="ivt-3" class="grid-item hotbar-slot"></div>
+            <div id="ivt-4" class="grid-item hotbar-slot"></div>
+            <div id="ivt-5" class="grid-item hotbar-slot"></div>
+            <div id="ivt-6" class="grid-item hotbar-slot"></div>
+            <div id="ivt-7" class="grid-item hotbar-slot"></div>
+            <div id="ivt-8" class="grid-item hotbar-slot"></div>
+          </div>
         </div>
-        <script src="/js/pwa.js"></script>
-        <script src="/js/status.js"></script>
         <div id="gui-layer" style="position: absolute;top: 0%;left: 0%;width: 100%;height: 100%;">
             <div id="title-screen" >
                 <div id="title-text"></div>
@@ -212,32 +294,86 @@
         import GameEngine from "/js/modules/engines/GameEngine.js"
         import RenderingEngine from "/js/modules/engines/RenderingEngine.js"
         import {DeviceChecker} from "/js/modules/utils/DeviceUtils.js"
-            class DOMManipulator {
-                constructor() {
-                    this.title = {
-                        play :() => {
-                            document.getElementById('menu-world').style.display = 'block'
-                        },
-                        credit : {}
-                    }
-                    this.menu = {
-                        generateWorld : () => {
-                            document.getElementById('menu-world-setting-wrapper').style.display = 'none'
-                            document.getElementById('menu-world-loading-wrapper').style.display = 'block'
-                            const wSeed = document.getElementById('menu-world-input-seed').value;
-                            const wSize = document.getElementById('menu-world-input-size').value;
-                            load(wSize,wSeed)
-                        }
-                    }
-                }
-            }
+        import DOMManipulator from "/js/modules/utils/DOMManipulator.js"
             var GUI = new DOMManipulator()
+            document.getElementById("ivt-0").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-0").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-1").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-1").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-2").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-2").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-3").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-3").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-4").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-4").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-5").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-5").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-6").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-6").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-7").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-7").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-8").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-8").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-9").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-9").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-10").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-10").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-11").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-11").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-12").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-12").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-13").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-13").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-14").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-14").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-15").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-15").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-16").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-16").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-17").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-17").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-18").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-18").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-19").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-19").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-20").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-20").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-21").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-21").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-22").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-22").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-23").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-23").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-24").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-24").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-25").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-25").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-26").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-26").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-27").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-27").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-28").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-28").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-29").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-29").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-30").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-30").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-31").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-31").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-32").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-32").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-33").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-33").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-34").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-34").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
+            document.getElementById("ivt-35").addEventListener('drop',(event)=>{GUI.drop(event)})
+            document.getElementById("ivt-35").addEventListener('dragover',(event)=>{GUI.allowDrop(event)})
             document.getElementById("title-button-play").addEventListener('click',()=>{GUI.title.play()})
             document.getElementById("menu-world-button-generate").addEventListener('click',()=>{GUI.menu.generateWorld()})
             //Setup THREE JS Components
                 let camera, scene, renderer, controls;
                 //THREE JS Camera
-                camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.01, 50 );
+                camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 35 );
                 //if (DeviceChecker.isMobile()) {
                 //    controls = new DeviceOrientationControls( camera );
                 //    controls.connect()
@@ -262,13 +398,24 @@
                 var keyboard = new Keyboard()
                 var joystick = new Joystick()
                 var mouse = new Mouse()
+                player.controls = controls
+                player.mouse = mouse
+                GUI.binding.moveItem = player.ivtAction.moveItem;
+                GUI.binding.exchangeItem = player.ivtAction.exchangeItem;
+                GUI.binding.assignItem = player.ivtAction.assignItem;
+                GUI.ivt = player.Inventory.content;
+                GUI.load = load;
+                GUI.init()
                 //Load schema
-                WRCOMP.textures.push(new Assets.TextureSchema("grass",{top:"/images/grass-top.jpg",side:"/images/grass-side.png",bottom:"/images/grass-bottom.jpg"}))
+                WRCOMP.textures.push(new Assets.TextureSchema("grass",{top:"/images/grass-topx16.png",side:"/images/grass-sidex16.png",bottom:"/images/grass-bottomx16.png"}))
+                WRCOMP.textures.push(new Assets.TextureSchema("dirt",{top:"/images/grass-bottomx16.png",side:"/images/grass-bottomx16.png",bottom:"/images/grass-bottomx16.png"}))
+                WRCOMP.textures.push(new Assets.TextureSchema("stone",{top:"/images/stone.png",side:"/images/stone.png",bottom:"/images/stone.png"}))
+                WRCOMP.textures.push(new Assets.TextureSchema("bedrock",{top:"/images/bedrock.png",side:"/images/bedrock.png",bottom:"/images/bedrock.png"}))
                 //Make a function to pre-load data and attributes to the scene
                 function load(mapSize,seed) {
                     //Setup the renderer/canvas
-                    renderer = new THREE.WebGLRenderer( { antialias: true } );
-                    renderer.setPixelRatio( window.devicePixelRatio );
+                    renderer = new THREE.WebGLRenderer();
+                    renderer.setPixelRatio( window.devicePixelRatio/1.5);
                     renderer.setSize( window.innerWidth, window.innerHeight );
                     //Append the renderer into the container
                     document.getElementById('container').appendChild( renderer.domElement );
@@ -294,7 +441,7 @@
                         } else {
                             player.updatePCControllers(keyboard,mouse)
                         }  
-                        keyboard.logParam = scene.children;
+                        keyboard.logParam = function () {console.log(keyboard.state.hotbarSelected)};
                         player.getCrosshairTarget(camera,scene) 
                             //Optimize hitbox to appear only where it's needed
                             WRCOMP.getHitboxes(player,world)

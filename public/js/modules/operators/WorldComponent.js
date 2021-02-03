@@ -6,6 +6,7 @@ export default class WorldComponent {
         this.mapHeight = null;
         this.textures = [];
         this.objectMap = [];
+        this.chunkMap = [];
         this.vertices = {
             w : new Float32Array( [
                 -0.5, 0.5,  0.5,
@@ -157,7 +158,7 @@ export default class WorldComponent {
     }
     findObjectByCoords(x,y,z) {
         if (x>this.mapSize-1||y>this.mapHeight-1||z>this.mapSize-1||x<0||y<0||z<0) {
-            return {position:{x:x,y:y,z:z},content:false};
+            return {position:{x:x,y:y,z:z},content:false,schema:null,meshes:{t:null,b:null,n:null,w:null,e:null,s:null}};
         } else {
             return this.objectMap[(z)*((this.mapSize)*this.mapHeight)+(x)*(this.mapHeight)+ (y)]
         }
@@ -166,6 +167,37 @@ export default class WorldComponent {
         this.objectMap.forEach(element => {
             if (element.content !== false) {
                 this.renderBuffer(element,scene)
+            }   
+        })
+    }
+    loadChunk(scene,coords) {
+        this.objectMap.forEach(element => {
+            if (element.content !== false) {
+                this.renderBuffer(element,scene)
+            }   
+        })
+    }
+    unloadChunk(scene,coords) {
+        this.objectMap.forEach(element => {
+            if (element.content !== false) {
+                if (element.meshes.t !== null) {
+                    scene.remove(element.meshes.t)
+                }
+                if (element.meshes.b !== null) {
+                    scene.remove(element.meshes.b)
+                }
+                if (element.meshes.n !== null) {
+                    scene.remove(element.meshes.n)
+                }
+                if (element.meshes.w !== null) {
+                    scene.remove(element.meshes.w)
+                }
+                if (element.meshes.e !== null) {
+                    scene.remove(element.meshes.e)
+                }
+                if (element.meshes.s !== null) {
+                    scene.remove(element.meshes.s)
+                }
             }   
         })
     }
@@ -219,33 +251,45 @@ export default class WorldComponent {
         }
         if (!needToRender.t) {
             scene.remove(meshT)
+            object.meshes.t = null;
         } else {
             scene.add(meshT)
+            object.meshes.t = scene.children[scene.children.length -1];
         }
         if (!needToRender.b) {
             scene.remove(meshB)
+            object.meshes.b = null;
         } else {
             scene.add(meshB)
+            object.meshes.b = scene.children[scene.children.length -1];
         }
         if (!needToRender.n) {
             scene.remove(meshN)
+            object.meshes.n = null;
         } else {
             scene.add(meshN)
+            object.meshes.n = scene.children[scene.children.length -1];
         }
         if (!needToRender.w) {
             scene.remove(meshW)
+            object.meshes.w = null;
         } else {
             scene.add(meshW)
+            object.meshes.w = scene.children[scene.children.length -1];
         }
         if (!needToRender.s) {
             scene.remove(meshS)
+            object.meshes.s = null;
         } else {
             scene.add(meshS)
+            object.meshes.s = scene.children[scene.children.length -1];
         }
         if (!needToRender.e) {
             scene.remove(meshE)
+            object.meshes.e = null;
         } else {
             scene.add(meshE)
+            object.meshes.e = scene.children[scene.children.length -1];
         }       
     }
     getHitboxes(player,world) {
@@ -282,11 +326,25 @@ export default class WorldComponent {
         for (let x = -1;x<=1;x++) {
             for(let y = -1;y<=1;y++) {
                 for(let z= -1;z<=1;z++) {
-                    var datedMeshes = scene.children.filter(meshes => meshes.position.x === Math.round(selectedObject.position.x)+x&&meshes.position.y === Math.round(selectedObject.position.y)+y&&meshes.position.z === Math.round(selectedObject.position.z)+z);
-                        datedMeshes.forEach(mesh => {
-                            scene.remove(mesh)
-                        })
                     var objectToUpdate = this.findObjectByCoords(Math.round(selectedObject.position.x)+x,Math.round(selectedObject.position.y)+y,Math.round(selectedObject.position.z)+z)
+                    if (objectToUpdate.meshes.t !== null) {
+                        scene.remove(objectToUpdate.meshes.t)
+                    }
+                    if (objectToUpdate.meshes.b !== null) {
+                        scene.remove(objectToUpdate.meshes.b)
+                    }
+                    if (objectToUpdate.meshes.n !== null) {
+                        scene.remove(objectToUpdate.meshes.n)
+                    }
+                    if (objectToUpdate.meshes.w !== null) {
+                        scene.remove(objectToUpdate.meshes.w)
+                    }
+                    if (objectToUpdate.meshes.e !== null) {
+                        scene.remove(objectToUpdate.meshes.e)
+                    }
+                    if (objectToUpdate.meshes.s !== null) {
+                        scene.remove(objectToUpdate.meshes.s)
+                    }
                     if (objectToUpdate?.content !== false) {
                         this.renderBuffer(objectToUpdate,scene)
                     }
@@ -301,6 +359,41 @@ export default class WorldComponent {
         if (selectedBody !== undefined) {
             world.removeBody(selectedBody)
         } 
-        
+    }
+    addObject(adjacentMesh,object,scene) {
+        var adjacentObject = this.findObjectByCoords(adjacentMesh.position.x,adjacentMesh.position.y,adjacentMesh.position.z);
+        if (adjacentObject.content !== false) {
+            if (adjacentObject.meshes.t?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x,adjacentObject.position.y+1,adjacentObject.position.z)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            } else if (adjacentObject.meshes.b?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x,adjacentObject.position.y-1,adjacentObject.position.z)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            } else if (adjacentObject.meshes.n?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x,adjacentObject.position.y,adjacentObject.position.z-1)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            } else if (adjacentObject.meshes.w?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x,adjacentObject.position.y,adjacentObject.position.z+1)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            } else if (adjacentObject.meshes.s?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x+1,adjacentObject.position.y,adjacentObject.position.z)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            } else if (adjacentObject.meshes.e?.uuid === adjacentMesh.uuid) {
+                var selectedObject = this.findObjectByCoords(adjacentObject.position.x-1,adjacentObject.position.y,adjacentObject.position.z)
+                selectedObject.content = true;
+                selectedObject.schema = object;
+                this.updateMeshNearObject(selectedObject,scene)
+            }
+        }
     }
 }

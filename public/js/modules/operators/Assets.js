@@ -4,10 +4,18 @@ export default class Assets {
         class TextureSchema {
             constructor(name,path) {
                 this.name = name;
+                this.resource = {
+                    top: new THREE.TextureLoader().load(path.top),
+                    side: new THREE.TextureLoader().load(path.side),
+                    bottom: new THREE.TextureLoader().load(path.bottom)
+                }
+                this.resource.top.magFilter = THREE.NearestFilter;
+                this.resource.side.magFilter = THREE.NearestFilter;
+                this.resource.bottom.magFilter = THREE.NearestFilter;
                 this.texture = {
-                    top: new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load(path.top) }),
-                    side: new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load(path.side) }),
-                    bottom: new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load(path.bottom) }),
+                    top: new THREE.MeshStandardMaterial({ map: this.resource.top, }),
+                    side: new THREE.MeshStandardMaterial({ map: this.resource.side }),
+                    bottom: new THREE.MeshStandardMaterial({ map: this.resource.bottom }),
                 };
             }
         }

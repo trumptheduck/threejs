@@ -6,21 +6,35 @@ export default class Keyboard {
             moveLeft: "a",
             moveRight: "d",
             jump: " ",
-            log: "`"
+            log: "`",
+            hotbar: {
+                slot1: "1",
+                slot2: "2",
+                slot3: "3",
+                slot4: "4",
+                slot5: "5",
+                slot6: "6",
+                slot7: "7",
+                slot8: "8",
+                slot9: "9",
+            },
+            inventory: "e"
         };
         this.state = {
             moveForward: false,
             moveBackward: false,
             moveLeft: false,
             moveRight: false,
-            jump: false
+            jump: false,
+            hotbarSelected: null,
+            inventory: false
         }
         this.inputAngle = 0;
         this.isActive = false;
         this.isJumping = false;
         this.logParam = null;
         this.logger = () => {
-            console.log(this.logParam);
+            this.logParam()
         }
     };
     connect() {
@@ -43,6 +57,36 @@ export default class Keyboard {
                 break;
                 case this.binding.log:
                     this.logger()
+                break;
+                case this.binding.hotbar.slot1: 
+                this.state.hotbarSelected = 1;
+                break;
+                case this.binding.hotbar.slot2: 
+                this.state.hotbarSelected = 2;
+                break;
+                case this.binding.hotbar.slot3: 
+                this.state.hotbarSelected = 3;
+                break;
+                case this.binding.hotbar.slot4: 
+                this.state.hotbarSelected = 4;
+                break;
+                case this.binding.hotbar.slot5: 
+                this.state.hotbarSelected = 5;
+                break;
+                case this.binding.hotbar.slot6: 
+                this.state.hotbarSelected = 6;
+                break;
+                case this.binding.hotbar.slot7: 
+                this.state.hotbarSelected = 7;
+                break;
+                case this.binding.hotbar.slot8: 
+                this.state.hotbarSelected = 8;
+                break;
+                case this.binding.hotbar.slot9: 
+                this.state.hotbarSelected = 9;
+                break;
+                case this.binding.inventory: 
+                this.state.inventory = !this.state.inventory;
                 break;
             }
         });

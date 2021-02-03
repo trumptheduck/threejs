@@ -1,170 +1,168 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-        <link rel="manifest" href="/js/pwa.webmanifest">
-        <link rel="apple-touch-icon" href="/images/icon-256x256.png">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff"/>
-        <title>Page Title</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    </head>
-    <style>
-        body {
-            margin: 0px;
-            overflow: hidden;
+<!DOCTYPE HTML>
+<html>
+<head>
+<script>
+var inventoryArray = []
+var emptyItem = {
+    amount: 0,
+    type: '',
+    icon: ''
+}
+var bedrock = {
+    amount: 1,
+    type: "bedrock",
+    icon: '/images/bedrock.png'
+}
+var grass = {
+    amount: 1,
+    type: "grass",
+    icon: '/images/grass-side.png',
+}
+for (let i = 0;i< 36;i++) {
+    inventoryArray.push(emptyItem)
+}
+function renderItemUI(itemArray) {
+    for (let i = 0;i< itemArray.length;i++) {
+        if (itemArray[i].amount < 1) {
+          document.getElementById(`ivt-${i}`).innerHTML = ''
+        } else {
+            document.getElementById(`ivt-${i}`).innerHTML = `<img id="item-${Math.random()}" draggable="true" src="${itemArray[i].icon}" ondragstart="drag(event)" width="52" height="52" style="position: relative;left: -1px;top: -1px">`
         }
-        #container {
-            position: absolute;
-            top: 0%;
-            left: 0%;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-        #ui-layer {
-            position: absolute;
-            top: 0%;
-            left: 0%;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-        #title-screen {
-            position: fixed;
-            top: 0%;
-            left: 0%;
-            width: 100%;
-            height: 100%;
-            z-index: 3;
-            background-image: url('/images/title-background.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-        }
-            #title-text {
-                position: absolute;
-                top: 10%;
-                left: 30%;
-                width: 40%;
-                height: 30%;
-                background-color: transparent;
-                background-image: url('/images/logo.png');
-                background-size: contain;
-                background-repeat: no-repeat;
-            }
-            #title-button-play {
-                cursor: pointer;
-                position: absolute;
-                top: 43%;
-                left: 30%;
-                width: 40%;
-                height: 10%;
-                background-color: gray;
-                border: groove 3px white;
-            }
-            #title-button-play:hover {
-                filter: brightness(0.6);
-            }
-            #title-button-credit {
-                cursor: pointer;
-                position: absolute;
-                top: 60%;
-                left: 30%;
-                width: 40%;
-                height: 10%;
-                background-color: gray;
-                border: groove 3px white;
-            }
-            #title-button-credit:hover {
-                filter: brightness(0.6);
-            }
-            .button-text {
-                cursor: pointer;
-                color: rgb(240, 240, 240);
-                font-size: 3.1vh;
-                font-weight: bold;
-                text-align: center;
-            }
-        #menu-world {
-            position: fixed;
-            top: 0%;
-            left: 0%;
-            width: 100%;
-            height: 100%;
-            z-index: 4;
-            background-image: url('/images/dirt-background.jpg');
-            background-repeat: repeat;
-        }
-            #menu-world-input-seed {
-                position: absolute;
-                top: 20%;
-                left: 28%;
-                width: 30%;
-                height: 6%;
-                padding: 5px;
-                border: groove 3px white;
-                background-color: black;
-                color: white;
-            }
-            #menu-world-input-size {
-                position: absolute;
-                top: 20%;
-                left: 62%;
-                width: 10%;
-                height: 6%;
-                padding: 5px;
-                border: groove 3px white;
-                background-color: black;
-                color: white;
-            }
-            #menu-world-button-generate {
-                cursor: pointer;
-                position: absolute;
-                top: 60%;
-                left: 30%;
-                width: 40%;
-                height: 10%;
-                background-color: gray;
-                border: groove 3px white;
-            }
-            #menu-world-button-generate:hover{
-                filter: brightness(0.6);
-            }
-            #menu-world-setting-wrapper {
-                top:0%;
-                left: 0%;
-                width: 100%;
-                height: 100%;
-                display: none;
-            }
-            #loading-text {
-                position: relative;
-                cursor: none;
-                color: rgb(240, 240, 240);
-                font-size: 3.1vh;
-                top: 40vh;
-                font-weight: bold;
-                text-align: center;
-            }
+    }
+}
+function exchangeItem(slot1,slot2) {
+    let interchangeValue = inventoryArray[slot1];
+    inventoryArray[slot1] = inventoryArray[slot2];
+    inventoryArray[slot2] = interchangeValue;
+}
+function assignItem(item,slot) {
+    inventoryArray[slot] = item;
+}
+function moveItem(slot1,slot2) {
+    inventoryArray[slot2] = inventoryArray[slot1];
+    inventoryArray[slot1] = emptyItem;
+}
+function allowDrop(ev) {
+  ev.preventDefault();
+}
 
-    </style>
-	<body>
-        <div id="container"></div>
-        <div id="ui-layer"></div>
-        <script src="/js/pwa.js"></script>
-        <script src="/js/status.js"></script>
-        <div id="title-screen">
-            <div id="title-text"></div>
-            <div id="title-button-play"><p class="button-text">PLAY</p></div>
-            <div id="title-button-credit"><p class="button-text">CREDIT</p></div>
-        </div>
-        <div id="menu-world">
-            <div id="menu-world-setting-wrapper">            
-                <input id="menu-world-input-size" type="number" value="32">
-                <input id="menu-world-input-seed" placeholder="World Seed">
-                <div id="menu-world-button-generate"><p class="button-text">Generate World</p></div>
-            </div>
-            <div id="menu-world-loading-wrapper"><p id="loading-text">Generating World...</p></div>
-        </div>
-	</body>
+function drag(ev) {
+  ev.dataTransfer.setData("data", ev.target.id);
+  ev.dataTransfer.setData("origin",ev.target.parentNode.id)
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  var origin = ev.dataTransfer.getData("origin");
+  var data = ev.dataTransfer.getData("data");
+  if (ev.target.tagName === 'DIV') {
+    var slot1, slot2
+    slot1 = parseInt(ev.target.id.split('-').pop(),10);
+    slot2 = parseInt(document.getElementById(origin).id.split('-').pop(),10)
+    moveItem(slot2,slot1);
+    renderItemUI()
+  } else if (ev.target.tagName === 'IMG') {
+    var slot1, slot2
+    slot1 = parseInt(ev.target.parentNode.id.split('-').pop(),10);
+    slot2 = parseInt(document.getElementById(origin).id.split('-').pop(),10)
+    exchangeItem(slot1,slot2);
+    renderItemUI()
+  }
+  console.log(inventoryArray)
+}
+assignItem(grass,23)
+assignItem(bedrock,13)
+function test(text) {console.log(text)}
+var binding = test
+</script>
+<style>
+#UI-inventory {
+  margin: 0;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background-color: rgb(202, 202, 202);
+  width: fit-content;
+  height: 170px;
+  padding: 20px;
+  border: rgb(223, 223, 223) groove 4px;
+}
+#UI-hotbar {
+    margin: 0;
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    transform: translate(-50%);
+    background-color: transparent;
+    width: fit-content;
+    height: 54px;
+    padding: 5px;
+    border: rgb(223, 223, 223) groove 4px;
+}
+.grid-container {
+  display: grid;
+  grid-template-columns: 52px 52px 52px 52px 52px 52px 52px 52px 52px;
+  grid-column-gap: 5px;
+  grid-row-gap: 5px;
+  
+}
+.grid-item {
+    width: 50px;height: 50px;border: groove 1px grey;
+    padding: 0px;
+}
+.inventory-slot{
+    background-color: whitesmoke;
+}
+.hotbar-slot {
+    background-color: whitesmoke;
+    opacity: 0.5;
+}
+.hotbar-slot.selected{
+    opacity: 1;
+}
+</style>
+</head>
+<body>
+<div class="grid-container" id="UI-inventory">
+    <div id="ivt-9" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-10" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-11" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-12" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-13" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-14" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-15" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-16" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-17" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-18" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-19" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-20" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-21" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-22" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-23" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-24" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-25" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-26" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-27" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-28" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-29" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-30" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-31" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-32" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-33" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-34" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+    <div id="ivt-35" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item inventory-slot"></div>
+  </div>
+  <div class="grid-container" id="UI-hotbar">
+    <div id="ivt-0" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-1" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot selected"></div>
+    <div id="ivt-2" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-3" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-4" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-5" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-6" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-7" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+    <div id="ivt-8" ondrop="drop(event)" ondragover="allowDrop(event)" class="grid-item hotbar-slot"></div>
+  </div>
+</body>
 </html>

@@ -1,6 +1,20 @@
 import * as THREE from "/js/three/build/three.module.js"
+import Inventory from "/js/modules/operators/Inventory.js"
 export default class Player {
     constructor() {
+        this.controls = null;
+        this.mouse = null;
+        this.keyboard = null;
+        this.Inventory = new Inventory(36);
+        this.ivtAction = {
+            moveItem : this.Inventory.moveItem,
+            exchangeItem : this.Inventory.exchangeItem,
+            assignItem : this.Inventory.assignItem
+        }
+        this.isInventoryOpened = false;
+        this.inventoryPrevState = false;
+        this.selectedSlot = null;
+        this.prevSlot = null;
         this.isMoving = false;
         this.isJumping = false;
         this.isDestroying = false;
@@ -22,7 +36,7 @@ export default class Player {
         this.body = new CANNON.Body({ mass: 0.0000001});
         this.body.addShape(this.shape)
         this.body.position.x = 0
-        this.body.position.y = 15
+        this.body.position.y = 30
         this.body.position.z = 0
         this.body.angularDamping=1;
         this.body.linearDamping=0;
@@ -30,9 +44,12 @@ export default class Player {
         this.body.sleepSpeedLimit = 1;
         this.body.sleepTimeLimit = 1.0;
         this.lookAt = null;
+        this.selectedItem = "grass";
         this.destroyCD = 5;
+        this.placeCD = 5;
         this.jumpCD = 10;
         this.currDestroyCD = 0;
+        this.currPlaceCD = 0;
         this.currJumpCD = 0;
         this.spawn = (scene,world) => {
             scene.add(this.mesh);
@@ -76,16 +93,50 @@ export default class Player {
         }
         
         this.doAction = (scene,world,wrcomp) => {
+            if (this.prevSlot !== this.selectedSlot) {
+                this.prevSlot = this.selectedSlot;
+                this.selectedItem = this.Inventory.content[this.selectedSlot - 1].schema;
+                document.getElementById("ivt-0").classList.remove("selected");
+                document.getElementById("ivt-1").classList.remove("selected");
+                document.getElementById("ivt-2").classList.remove("selected");
+                document.getElementById("ivt-3").classList.remove("selected");
+                document.getElementById("ivt-4").classList.remove("selected");
+                document.getElementById("ivt-5").classList.remove("selected");
+                document.getElementById("ivt-6").classList.remove("selected");
+                document.getElementById("ivt-7").classList.remove("selected");
+                document.getElementById("ivt-8").classList.remove("selected");
+                document.getElementById(`ivt-${this.selectedSlot - 1}`).classList.add("selected");
+            }
+            if (this.isInventoryOpened !== this.inventoryPrevState) {
+                console.log(this.isInventoryOpened)
+                this.inventoryPrevState = this.isInventoryOpened;
+                if (this.isInventoryOpened) {
+                    document.getElementById("UI-inventory").style.display = 'grid';
+                    this.mouse.state.destroy = false;
+                    this.mouse.state.place = false;
+                    this.controls.unlock()
+                } else {
+                    document.getElementById("UI-inventory").style.display = 'none';
+                    this.controls.lock()
+                    this.mouse.state.destroy = false;
+                    this.mouse.state.place = false;
+                }
+            }
             if (this.currDestroyCD > 0) {this.currDestroyCD--}
-            if (this.isDestroying&&this.currDestroyCD === 0) {
+            if (this.isDestroying&&this.currDestroyCD === 0&&!this.isInventoryOpened) {
                 this.currDestroyCD = this.destroyCD;
                 let selectedObject = wrcomp?.objectMap.find(object => (object.position.x === this.lookAt?.object.position.x&&object.position.y === this.lookAt?.object.position.y&&object.position.z === this.lookAt?.object.position.z));
                 if (selectedObject !== undefined) {
                     wrcomp.removeObject(selectedObject,scene,world)
                 }
             };
-            if (this.isPlacing) {
-                console.log("Coming soon!")
+            if (this.currPlaceCD > 0) {this.currPlaceCD--}
+            if (this.isPlacing&&this.currPlaceCD === 0&&!this.isInventoryOpened) {
+                this.currPlaceCD = this.placeCD;
+                let adjacentMesh = this.lookAt?.object;
+                if (adjacentMesh !== undefined) {
+                    wrcomp.addObject(adjacentMesh,this.selectedItem,scene)
+                }
             }
         }
 
@@ -126,9 +177,12 @@ export default class Player {
         this.updatePCControllers = (keyboard,mouse) => {
             keyboard.update()
             this.isDestroying = mouse.state.destroy;
+            this.isPlacing = mouse.state.place;
             this.movingAngle = keyboard.inputAngle;
             this.isMoving = keyboard.isActive;
             this.isJumping = keyboard.isJumping;
+            this.selectedSlot = keyboard.state.hotbarSelected;
+            this.isInventoryOpened = keyboard.state.inventory;
         }
     }      
 }
