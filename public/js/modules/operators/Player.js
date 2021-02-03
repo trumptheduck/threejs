@@ -95,7 +95,7 @@ export default class Player {
         this.doAction = (scene,world,wrcomp) => {
             if (this.prevSlot !== this.selectedSlot) {
                 this.prevSlot = this.selectedSlot;
-                this.selectedItem = this.Inventory.content[this.selectedSlot - 1].schema;
+                this.selectedItem = this.Inventory.content[this.selectedSlot - 1]?.schema;
                 document.getElementById("ivt-0").classList.remove("selected");
                 document.getElementById("ivt-1").classList.remove("selected");
                 document.getElementById("ivt-2").classList.remove("selected");
@@ -114,12 +114,14 @@ export default class Player {
                     document.getElementById("UI-inventory").style.display = 'grid';
                     this.mouse.state.destroy = false;
                     this.mouse.state.place = false;
+                    this.selectedItem = this.Inventory.content[this.selectedSlot - 1]?.schema;
                     this.controls.unlock()
                 } else {
                     document.getElementById("UI-inventory").style.display = 'none';
                     this.controls.lock()
                     this.mouse.state.destroy = false;
                     this.mouse.state.place = false;
+                    this.selectedItem = this.Inventory.content[this.selectedSlot - 1]?.schema;
                 }
             }
             if (this.currDestroyCD > 0) {this.currDestroyCD--}
